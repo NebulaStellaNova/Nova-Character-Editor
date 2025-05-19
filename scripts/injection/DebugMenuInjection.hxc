@@ -16,18 +16,26 @@ import funkin.modding.base.ScriptedMusicBeatState;
 
 import funkin.ui.debug.DebugMenuSubState;
 
-class AnimInjection extends Module
+class DebugMenuInjection extends Module
 {
     public function new()
     {
-        super('custom-debug');
+        super('custom-debug-injection');
     }
 
-    override function onSubStateOpenEnd(event:SubStateScriptEvent) {
-        if (Std.isOfType(event.targetState, DebugMenuSubState)) {
-            var debugState:DebugMenuSubState = event.targetState;
-            var animEditor = debugState.items.getItem("ANIMATION EDITOR");
-            animEditor.setItem("CHARACTER EDITOR", FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor')));
+    override public function onSubStateOpenEnd(event:StateChangeScriptEvent)
+    {
+        if (Std.isOfType(event.targetState, DebugMenuSubState))
+        {   
+            var state = event.targetState;
+            state.createItem("Character Editor", openUnlockState);
         }
     }
+
+    public function openUnlockState()
+    {
+        FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
+        trace('opening character editor');
+    }
+    
 }
