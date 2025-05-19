@@ -1,0 +1,19 @@
+{
+  "music": "freeplayRandom",
+  "order": 0,
+  "categories": [
+    {
+      "title": "Character Editor",
+      "contributors": [
+          {
+            "name": "Nebula S. Nova",
+            "icon": "nebula",
+            "color": "#9500ff",
+            "roles": "Coder",
+            "url": "https://www.youtube.com/@ChinosModded"
+          }
+      ]
+    }
+  ]
+  
+}

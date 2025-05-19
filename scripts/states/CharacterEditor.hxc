@@ -1,0 +1,943 @@
+import Xml;
+import Reflect;
+import haxe.Json;
+import StringTools;
+import flixel.FlxG;
+import funkin.Paths;
+import funkin.Assets;
+import flixel.FlxCamera;
+import flixel.FlxSprite;
+import flixel.FlxObject;
+import funkin.ui.AtlasText;
+import flixel.math.FlxMath;
+import flixel.text.FlxText;
+import funkin.input.Cursor;
+import funkin.util.FileUtil;
+import funkin.util.MathUtil;
+import openfl.net.FileFilter;
+import funkin.util.WindowUtil;
+import funkin.util.ReflectUtil;
+import funkin.input.CursorMode;
+import funkin.audio.FunkinSound;
+import funkin.ui.MusicBeatState;
+import haxe.ui.components.DropDown;
+import funkin.graphics.FunkinSprite;
+import funkin.modding.PolymodHandler;
+import flixel.text.FlxTextBorderStyle;
+import haxe.ui.backend.flixel.UIState;
+import haxe.ui.RuntimeComponentBuilder;
+import funkin.ui.mainmenu.MainMenuState;
+import haxe.ui.containers.windows.Window;
+import funkin.modding.module.ModuleHandler;
+import haxe.ui.containers.windows.WindowManager;
+import funkin.modding.base.ScriptedMusicBeatState;
+
+
+
+import haxe.ui.components.NumberStepper;
+import haxe.ui.components.CheckBox;
+import haxe.ui.components.Button;
+import haxe.ui.components.TextArea;
+import haxe.ui.components.Label;
+import haxe.ui.components.TextField;
+import haxe.ui.containers.HBox;
+import haxe.ui.core.Component;
+import haxe.ui.core.TextDisplay;
+import haxe.ui.macros.ComponentMacros;
+
+class CharacterEditor extends MusicBeatState {
+    
+    var FILE_FILTER_XML:FileFilter = new FileFilter("Codename Character File", "*.xml");
+
+    var Converters;
+
+    var editorVersion = "v0.1";
+
+    var windowTitleSuffix = "";
+    var windowTitlePrefix = "";
+
+    var bg:FunkinSprite;
+
+    //var paths:String = 'mods/Nova Character Editor/';
+
+    var camCHAR;
+    var camHUD;
+
+    var buttons = [];
+    var callbacks = [];
+    var dropdowns = [];
+    var forceHidden = [];
+
+    var animCallbacks = [];
+    var animButtons = [];
+
+    var animationsDropdown = {
+        open: false,
+        buttons: []
+    };
+
+    var onionSkin:BaseCharacter;
+    var curChar:BaseCharacter;
+    var curCharFile;
+    var charFiles = [];
+
+    var infoText:FlxText;
+    var controlsText:FlxText;
+
+    var curAnimText:FlxText;
+
+    var curCharacter = "";
+
+    var currentPath = "";
+    var paths = [];
+    
+    var windows = [];
+
+    /*function getPath(file:String) {
+        return paths + file;
+    }*/
+
+    /**
+     * Shortcut to parse a JSON string
+     * @param str JSON contents as string.
+     * @return Parsed JSON
+    */
+    public function parseJsonString(str:String) {
+        return Json.parse(str);
+    }
+
+    /**
+     * Shortcut to parse a JSON file
+     * @param path  Path to the JSON file
+     * @return Parsed JSON
+    */
+    public function parseJsonFile(path:String) {
+        var daString = FileUtil.readStringFromPath(path);
+        if (daString == null || daString == "") {
+            return null;
+        } else {
+            return parseJsonString(daString);
+        }
+    }
+
+    function checkFileExists(path:String) {
+        return Assets.exists(path);
+    }
+
+    function new(){
+        super('CharacterEditor');
+        h = FlxG.height;
+        w = FlxG.width;
+    }
+        
+    var windowManager = new WindowManager();
+
+    function openWindow(title:String, children:Array, ?width, ?height) {
+        var window = new Window();
+        
+        for (i in windows) {
+            if (i.title == title) {
+                i.windowManager.closeWindow(i);
+                return;
+            }
+        }
+        
+        window.windowManager = windowManager;
+
+        window.title = title;
+        window.x = 200;
+        window.y = 200;
+        //if (width != null)
+        window.width = width != null ? width : 200;
+        window.height = height != null ? height : 100;
+        //window.draggable = true;
+        window.maximizable = false;
+        window.minimizable = false;
+        window.collapsable = false;
+        for (child in children) {
+            window.addComponent(child);
+        }
+        windows.push(window);
+        add(window);
+    }
+
+    function getButton(x:Int = 0, y:Int = 0, title:String, callback = ()->{}, ?width, ?forceHide = false, ?height, ?skipCallback=false) {
+        var button = new Button();
+        button.text = title;
+        button.allowFocus = true;
+        button.allowInteraction = true;
+        button.marginLeft = x;
+        button.marginTop = y;
+        if (width != null) {
+            button.width = width;
+        }
+        if (height != null) {
+            button.height = height;
+        }
+        if (!skipCallback) {
+            callbacks.push(callback);
+        }
+        forceHidden.push(forceHide);
+        return button;
+    }
+
+    var curView = "SPRITESHEET";
+
+    function create() {
+        super.create();
+
+        var currentFolder = "??";
+        for (mod in PolymodHandler.getAllMods()) {
+            var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
+            if (meta.title == "Nova Character Editor") {
+                currentFolder = "mods/" + mod.id;
+                break;
+            }
+        }
+
+        Converters = ModuleHandler.getModule("NovaConverters");
+
+        Cursor.show();
+
+        bg = new FunkinSprite(0, 0).loadGraphic(Paths.image('menuDesat'));
+        bg.scrollFactor.set(0, 0);
+        bg.setGraphicSize(Std.int(bg.width * 1.2));
+        bg.updateHitbox();
+        bg.screenCenter();
+        add(bg);
+
+        camCHAR = new FlxCamera();
+        camCHAR.bgColor = 0x00000000;
+        FlxG.cameras.add(camCHAR, false);
+
+        camHUD = new FlxCamera();
+        camHUD.bgColor = 0x00000000;
+        FlxG.cameras.add(camHUD, false);
+
+        onionSkin = new FunkinSprite();
+        onionSkin.cameras = [camCHAR];
+        onionSkin.alpha = 0.5;
+        add(onionSkin);
+        curChar = new FunkinSprite();
+        curChar.cameras = [camCHAR];
+        add(curChar);
+
+        var mainView:Component = new Component();
+        mainView.cameras = [camHUD];
+        this.add(mainView);
+
+        
+        var button = getButton(10, 10, "File", ()-> {
+            dropdowns[0].open = !dropdowns[0].open;
+            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+        }, 75);
+        buttons.push(button);
+        
+        var button = getButton(100, 10, "Character", ()-> {
+            trace("ran");
+            dropdowns[1].open = !dropdowns[1].open;
+            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+        }, 150);
+        buttons.push(button);
+
+        var button = getButton(265, 10, "Offsets", ()-> {
+            dropdowns[2].open = !dropdowns[2].open;
+            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+        }, 120);
+        buttons.push(button);
+
+        var button = getButton(FlxG.width - 215, 10, "Characters", ()-> {
+            dropdowns[3].open = !dropdowns[3].open;
+            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+        }, 200);
+        buttons.push(button);
+
+        var button = getButton(400, 10, "Converters", ()-> {
+            dropdowns[5].open = !dropdowns[5].open;
+            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+        }, 200);
+        buttons.push(button);
+
+        // File \\
+        dropdowns.push({
+            open: false,
+            buttons: [
+                getButton(10, 32, "New", ()-> {
+                    newCharacter();
+                }, 75),
+                getButton(10, 32 + (22), "Save", ()-> {
+                    saveCharacter();
+                }, 75),
+                getButton(10, 32 + (22*2), "Save As", ()-> {
+                    saveCharacterAs();
+                }, 75)
+                getButton(10, 32  + (22*3), "Exit", ()-> {
+                    FlxG.switchState(new MainMenuState());
+                }, 75)
+            ]
+        });
+
+        // Character \\ 
+        dropdowns.push({
+            open: false,
+            buttons: [
+                getButton(100, 32, "New Animation", ()-> {
+                }, 150),
+                getButton(100, 32 + (22), "Edit Animation", ()-> {
+                }, 150),
+                getButton(100, 32 + (22*1), "Delete Cur Animation", ()-> {
+                    deleteCurAnim();
+                }, 150),
+                getButton(100, 32  + (22*2), "Edit Character Info", ()-> {
+                    var healthIconButton = new Button();
+                    healthIconButton.text = "Icon Properties";
+                    healthIconButton.onClick = ()->{
+                            // -- Flip X -- \\
+                        var flipXCheck = new CheckBox();
+                        flipXCheck.selected = curCharFile.healthIcon.flipX != null ? curCharFile.healthIcon.flipX : false;
+                        flipXCheck.onChange = ()->{
+                            curCharFile.healthIcon.flipX = flipXCheck.selected;
+                        }
+
+                        var flipXLabel = new Label();
+                        flipXLabel.text = "Flip X:";
+                        flipXLabel.marginTop = 5;
+
+                        var flipXBox = new HBox();
+                        flipXBox.addComponent(flipXLabel);
+                        flipXBox.addComponent(flipXCheck);
+                        
+                        // -- Flip Y -- \\
+                        var flipYCheck = new CheckBox();
+                        flipYCheck.selected = curCharFile.healthIcon.flipY != null ? curCharFile.healthIcon.flipY : false;
+                        flipYCheck.onChange = ()->{
+                            curCharFile.healthIcon.flipY = flipYCheck.selected;
+                        }
+
+                        var flipYLabel = new Label();
+                        flipYLabel.text = "Flip Y:";
+                        flipYLabel.marginTop = 5;
+
+                        var flipYBox = new HBox();
+                        flipYBox.addComponent(flipYLabel);
+                        flipYBox.addComponent(flipYCheck);
+                        openWindow("Icon Properties", [flipXBox, flipYBox], 300, 200);
+                    }
+
+                    //var test = new TextDisplay();
+                    //test.htmlText = "Test: ";
+
+                    // -- Flip X -- \\
+                    var flipXCheck = new CheckBox();
+                    flipXCheck.selected = curCharFile.flipX != null ? curCharFile.flipX : false;
+                    flipXCheck.onChange = ()->{
+                        curCharFile.flipX = flipXCheck.selected;
+                    }
+
+                    var flipXLabel = new Label();
+                    flipXLabel.text = "Flip X:";
+                    flipXLabel.marginTop = 5;
+
+                    var flipXBox = new HBox();
+                    flipXBox.addComponent(flipXLabel);
+                    flipXBox.addComponent(flipXCheck);
+                    
+                    // -- Flip Y -- \\
+                    var flipYCheck = new CheckBox();
+                    flipYCheck.selected = curCharFile.flipY != null ? curCharFile.flipY : false;
+                    flipYCheck.onChange = ()->{
+                        curCharFile.flipY = flipYCheck.selected;
+                    }
+
+                    var flipYLabel = new Label();
+                    flipYLabel.text = "Flip Y:";
+                    flipYLabel.marginTop = 5;
+
+                    var flipYBox = new HBox();
+                    flipYBox.addComponent(flipYLabel);
+                    flipYBox.addComponent(flipYCheck);
+
+                    // -- ASSet Path -- \\
+                    var nameLabel = new Label();
+                    nameLabel.text = "Name:";
+                    nameLabel.marginTop = 7;
+                    //nameLabel.width = 70;
+                    
+                    var name = new TextField();
+                    name.text = curCharFile.name;
+                    name.onChange = ()->{
+                        curCharFile.name = name.text;
+                    }
+
+                    var nameBox = new HBox();
+                    nameBox.addComponent(nameLabel);
+                    nameBox.addComponent(name);
+
+                    // -- ASSet Path -- \\
+                    var assetPathLabel = new Label();
+                    assetPathLabel.text = "Asset Path:";
+                    assetPathLabel.marginTop = 7;
+                    //assetPathLabel.width = 70;
+                    
+                    var assetPath = new TextField();
+                    assetPath.text = curCharFile.assetPath;
+                    assetPath.onChange = ()->{
+                        curCharFile.assetPath = assetPath.text;
+                    }
+
+                    var assetPathBox = new HBox();
+                    assetPathBox.addComponent(assetPathLabel);
+                    assetPathBox.addComponent(assetPath);
+        
+
+                    openWindow("Character Info", [nameBox, assetPathBox, flipXBox, flipYBox,healthIconButton], 300, 200);
+                }, 150)
+            ]
+        });
+
+        // Offsets \\
+        dropdowns.push({
+            open: false,
+            buttons: [
+                getButton(265, 32, "Clear Anim Offsets", ()-> {
+                    setCurrentOffsetX(0);
+                    setCurrentOffsetY(0);
+                }, 120)
+            ]
+        });
+
+
+        var charactersDropdown = {
+            open: false,
+            buttons: []
+        };
+        
+        var charIndex:Int = 0;
+        for (i in FileUtil.readDir("mods")) {
+            if (FileUtil.directoryExists("mods/" + i + "/data/characters/")) {
+                for (file in FileUtil.readDir("mods/" + i + "/data/characters/")) {
+                    if (StringTools.endsWith(file, ".json")) {
+                        var charFile = parseJsonFile("mods/" + i + "/data/characters/" + file);
+                        if (charFile != null) {
+                            var title = "";
+                            if (charFile.name == null) {
+                                title = StringTools.replace(file, ".json", " (Unkown Name)");
+                            } else {
+                                title = charFile.name;
+                            }
+                            paths.push("mods/" + i + "/data/characters/" + file);
+                            var daButton = getButton(FlxG.width - 215, 32 + (22*charIndex), title, ()-> {
+                                loadCharacter(charFile, "mods/" + i + "/data/characters/" + file);
+                                FunkinSound.playOnce(Paths.sound("chartingSounds/noteLay"), 1);
+                            }, 200);
+                            trace(daButton.label);
+                            charactersDropdown.buttons.push(daButton);
+                            trace(title);
+                            charIndex++;
+                            charFiles.push(charFile);
+                        } else {
+                            trace("Failed to parse \"" + file + "\"");
+                        }
+                    }
+                    
+                }
+            }
+        }
+        loadCharacter(charFiles[0], paths[0]);
+
+        dropdowns.push(charactersDropdown);
+
+
+        // Animations \\
+        dropdowns.push({
+            open: false,
+            buttons: [
+                //getButton(265, 32, "Clear Anim Offsets", ()-> {
+                //}, 120)
+            ]
+        });
+
+        dropdowns.push({
+            open: false,
+            buttons: [
+                getButton(400, 32 + (22*0), "Psych to V-Slice", ()-> {
+                    FileUtil.browseForTextFile("Select Psych Engine Character File", [FileUtil.FILE_FILTER_JSON], (data)->{
+                        var convertedFile = Converters.scriptCall("charFromPsych", [Json.parse(data.text)]);
+                        FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (destPath)->{
+                            writeCharFile(fixPath(destPath), convertedFile);
+                            FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
+                        }, null, data.name);
+                    });
+                }, 200),
+                getButton(400, 32 + (22*1), "Codename to V-Slice", ()-> {
+                    FileUtil.browseForTextFile("Select Codename Engine Character File", [FILE_FILTER_XML], (data)->{
+                        var convertedFile = Converters.scriptCall("charFromCNE", [Xml.parse(data.text)]);
+                        FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (destPath)->{
+                            writeCharFile(fixPath(destPath), convertedFile);
+                            FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
+                        }, null, StringTools.replace(data.name, ".xml", ".json"));
+                    });
+                }, 200)
+            ]
+        });
+
+
+        var button = getButton(FlxG.width - 435, 10, "", ()-> {}, 200);
+        mainView.addComponent(button);
+        //buttons.push(button);
+        
+        for (i in buttons) {
+            i.cameras = [camHUD];
+            mainView.addComponent(i);
+        }
+        for (i in dropdowns) {
+            var index = 0;
+            for (x in i.buttons) {
+                x.visible = false;
+                x.textAlign = "left";
+                buttons.push(x);
+                mainView.addComponent(x);
+                index++;
+            }
+        }
+        
+        curAnimText = new FlxText(0, 0);
+        curAnimText.cameras = [camHUD];
+        add(curAnimText);
+
+        infoText = new FlxText(10, 0, null, "Test", 32);
+        infoText.font = 'VCR OSD Mono';
+        infoText.borderStyle = FlxTextBorderStyle.OUTLINE;
+        infoText.borderSize = 2;
+        infoText.cameras = [camHUD];
+        infoText.y = FlxG.height - infoText.frameHeight;
+        add(infoText);
+
+        controlsText = new FlxText(10, 0, null, "Controls:\nReload Character List: R\nSwitch Animation: W, S\nSwitch Onion Anim: Shift + (W, S)\nPlay Current Animation: SPACE\nMove Offset: Left, Down, Up, Right\nMove Offset Extra: Shift + (Left, Down, Up, Right)", 20);
+        controlsText.font = 'VCR OSD Mono';
+        controlsText.borderStyle = FlxTextBorderStyle.OUTLINE;
+        controlsText.borderSize = 1.5;
+        controlsText.alignment = "right";
+        controlsText.cameras = [camHUD];
+        controlsText.x = FlxG.width - (controlsText.frameWidth-23);
+        controlsText.y = FlxG.height - (controlsText.frameHeight-45);
+        add(controlsText);
+
+        var test = { 
+            animations: [
+                "test",
+                "test2"
+            ]
+        };
+        test.animations.remove("test2");
+        trace(test);
+
+
+
+        //button.allowFocus = true;
+        //button.allowInteraction = true;
+        //button.marginLeft = x;
+        //button.marginTop = y;
+
+        
+    }
+
+
+
+    function loadCharacter(charFile, path) {
+        trace(path);
+        currentPath = path;
+        curCharFile = charFile;
+        curChar.frames = Paths.getSparrowAtlas(charFile.assetPath); 
+        var animIndex:Int = 0;
+        for (i in forceHidden) {
+            i = true;
+        }
+        for (anim in charFile.animations) {
+            var fps = anim.frameRate == null ? 24 : anim.frameRate;
+            var looped = anim.looped == null ? false : anim.looped;
+            var flipX = anim.flipX == null ? false : anim.flipX;
+            if (anim.frameIndices != null && anim.frameIndices != []) {
+                curChar.animation.addByIndices(anim.name, anim.prefix, anim.frameIndices, null, fps, looped, flipX);
+            } else {
+                curChar.animation.addByPrefix(anim.name, anim.prefix, fps, looped, flipX);
+            }
+        }
+        if (curChar.animation.exists("idle")) {
+            curChar.animation.play("idle");
+        }
+        if (curChar.animation.exists("danceLeft")) {
+            curChar.animation.play("danceLeft");
+        }
+        curChar.flipX = charFile.flipX == null ? false : charFile.flipX; 
+        curChar.updateHitbox();
+        curChar.screenCenter();
+
+        onionSkin.frames = Paths.getSparrowAtlas(charFile.assetPath); 
+        var animIndex:Int = 0;
+        for (i in forceHidden) {
+            i = true;
+        }
+        for (anim in charFile.animations) {
+            var fps = anim.frameRate == null ? 24 : anim.frameRate;
+            var looped = anim.looped == null ? false : anim.looped;
+            var flipX = anim.flipX == null ? false : anim.flipX;
+            if (anim.frameIndices != null && anim.frameIndices != []) {
+                onionSkin.animation.addByIndices(anim.name, anim.prefix, anim.frameIndices, null, fps, looped, flipX);
+            } else {
+                onionSkin.animation.addByPrefix(anim.name, anim.prefix, fps, looped, flipX);
+            }
+        }
+        if (onionSkin.animation.exists("idle")) {
+            onionSkin.animation.play("idle");
+        }
+        if (onionSkin.animation.exists("danceLeft")) {
+            onionSkin.animation.play("danceLeft");
+        }
+        onionSkin.flipX = charFile.flipX == null ? false : charFile.flipX; 
+        onionSkin.updateHitbox();
+        onionSkin.screenCenter();
+
+        curCharacter = charFile.name;
+        windowTitleSuffix = " - " + curCharacter;
+    }
+
+    function deleteCurAnim() {
+        windowTitleSuffix = " - " + curCharacter + " *";
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                if (anim.name == curChar.animation.name) {
+                    curCharFile.animations.remove(anim);
+                }
+            }
+        }
+    }
+
+    function getCurrentOffsetX() {
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                if (anim.name == curChar.animation.name) {
+                    return anim.offsets[0];
+                }
+            }
+        }
+    }
+
+    function getCurrentOffsetY() {
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                if (anim.name == curChar.animation.name) {
+                    return anim.offsets[1];
+                }
+            }
+        }
+    }
+
+    function setCurrentOffsetX(x:Int) {
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                if (anim.name == curChar.animation.name) {
+                    anim.offsets[0] = x;
+                }
+            }
+        }
+        windowTitleSuffix = " - " + curCharacter + " *";
+    }
+    
+    function setCurrentOffsetY(y:Int) {
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                if (anim.name == curChar.animation.name) {
+                    anim.offsets[1] = y;
+                }
+            }
+        }
+        windowTitleSuffix = " - " + curCharacter + " *";
+    }
+
+    function merge(base: Dynamic, ext: Dynamic) {
+        var res = ReflectUtil.copy(base);
+        for(f in ReflectUtil.getAnonymousFieldsOf(ext)) ReflectUtil.setAnonymousField(res,f,Reflect.getAnonymousField(res,f));
+        return res;
+    }
+
+    function writeCharFile(path, jsonFile) {
+        var generatedBy = "Nova Character Editor " + editorVersion;
+        jsonFile.generatedBy = generatedBy;
+        var fileString = Json.stringify(jsonFile, null, "\t");
+        if (checkFileExists(path)) {
+            FileUtil.deleteFile(path);
+        }
+        FileUtil.writeStringToPath(path, fileString);
+        windowTitleSuffix = StringTools.replace(windowTitleSuffix, " *", "");
+    }
+
+    function fixPath(path) {
+        var stringSplit = path.split("\\");
+        while (stringSplit[0] != "mods") {
+            stringSplit.shift();
+        }
+        path = stringSplit.join("/");
+        return path;
+    }
+
+    function saveCharacter() {
+        writeCharFile(currentPath, curCharFile);
+    }
+
+    function newCharacter() {
+        FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
+            writeCharFile(fixPath(path), Json.parse(FileUtil.readStringFromPath("mods/Nova Character Editor/data/config/templateCharacter.json")));
+            FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
+        }, null, "template.json");
+        
+    }
+
+    function saveCharacterAs() {
+        FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
+            writeCharFile(fixPath(path), curCharFile);
+        }, null, currentPath);
+    }
+
+    function updateWindowHitboxIG() {
+        for (obj in windows) {
+            if (obj != null) {
+                if (windowManager.topMostWindow == obj) {
+                    var tophitbox = new FlxSprite();
+                    tophitbox.width = obj.width;
+                    tophitbox.height = 44;
+                    tophitbox.x = obj.x + FlxG.mouse.deltaX;
+                    tophitbox.y = obj.y + FlxG.mouse.deltaY;
+                    if (FlxG.mouse.overlaps(tophitbox) && FlxG.mouse.pressed) {
+                        obj.x += FlxG.mouse.deltaX;
+                        obj.y += FlxG.mouse.deltaY;
+                    }
+                    if (obj.y < -3 && !FlxG.mouse.pressed) {
+                        obj.y = -3;
+                    }
+                }
+            }
+        }
+    }
+
+
+    var zoomTarget = 0.8;
+    var timer = 0;
+    var targetCamPos = [0, 0];
+    function update(elapsed) {
+        super.update(elapsed);
+        
+        if (FlxG.keys.justPressed.R) {
+            FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
+        }
+        if (controls.BACK) {
+            //FlxG.switchState(() -> new MainMenuState());
+        }
+
+       
+        
+
+        if (FlxG.keys.justPressed.W) {
+            var daChar = FlxG.keys.pressed.SHIFT ? onionSkin : curChar;
+            var animIndex = 0;
+            for (anim in curCharFile.animations) {
+                if (anim.name == daChar.animation.name) {
+                    break;
+                }
+                animIndex++;
+            }
+            animIndex--;
+            if (animIndex < 0) {
+                animIndex = curCharFile.animations.length-1;
+            }
+            daChar.animation.play(curCharFile.animations[animIndex].name, true);
+        }
+
+        if (FlxG.keys.justPressed.S) {
+            var daChar = FlxG.keys.pressed.SHIFT ? onionSkin : curChar;
+            var animIndex = 0;
+            for (anim in curCharFile.animations) {
+                if (anim.name == daChar.animation.name) {
+                    break;
+                }
+                animIndex++;
+            }
+            animIndex++;
+            if (animIndex > curCharFile.animations.length-1) {
+                animIndex = 0;
+            }
+            daChar.animation.play(curCharFile.animations[animIndex].name, true);
+        }
+        
+        var reset = true;
+        for (anim in curCharFile.animations) {
+            if (anim.name == curChar.animation.name) {
+                reset = false;
+            }
+        }
+        if (reset) {
+            curChar.animation.play(curCharFile.animations[0].name);
+        }
+
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                var daScale = curCharFile.scale != null ? curCharFile.scale : 1;
+                for (thing in [curChar, onionSkin]) {
+                    thing.flipX = curCharFile.flipX != null ? curCharFile.flipX : false;
+                    thing.flipY = curCharFile.flipY != null ? curCharFile.flipY : false;
+                    if (anim.name == thing.animation.name) {
+                        //curChar.updateHitbox();
+                        thing.scale.set(daScale, daScale);
+                        var offsetX = anim.offsets[0] * daScale;
+                        var offsetY = anim.offsets[1] * daScale;
+                        thing.x = ((FlxG.width/2) - ((thing.width/2)*daScale)) - (thing.flipX ? -offsetX : offsetX);
+                        thing.y = ((FlxG.height/2) - ((thing.height/2)*daScale)) - offsetY;
+                        if (curCharFile.offsets != null) {
+                            thing.x += curCharFile.offsets[0];
+                            thing.y += curCharFile.offsets[1];
+                        }
+                    }
+                }
+            }
+            
+        }
+
+        if (FlxG.keys.justPressed.SPACE) {
+            curChar.animation.play(curChar.animation.name, true);
+        }
+        zoomTarget += FlxG.mouse.wheel/10;
+        if (zoomTarget < 0) {
+            zoomTarget = 0;
+        }
+        camCHAR.zoom = MathUtil.coolLerp(camCHAR.zoom, zoomTarget, 0.1); 
+
+        var index:Int = 0;
+        var doClose = [];
+        //Cursor.applyCursorParams(null, Cursor.CURSOR_DEFAULT_PARAMS);
+        for (obj in dropdowns) {
+            doClose.push(false);
+            var buttonIndex:Int = 0;
+            for (button in obj.buttons) {
+                button.visible = forceHidden[buttonIndex] ? false : obj.open;
+                button.focus = FlxG.mouse.overlaps(button);
+                if (FlxG.mouse.justPressed && obj.open) {
+                    doClose[index] = true;
+                }
+                buttonIndex++;
+            }
+            index++;
+        }
+        
+
+
+        
+        var isHovering = false;
+        var i:Int = 0;
+        for (button in buttons) {
+            button.focus = FlxG.mouse.overlaps(button);
+            if (FlxG.mouse.overlaps(button) && button.visible) {
+                isHovering = true;
+            }
+            if (button.focus && FlxG.mouse.justPressed && button.visible) {
+                if (callbacks[i] != null) {
+                    callbacks[i]();
+                }
+            }
+            i++;
+        }
+        if (isHovering) {
+            Cursor.cursorMode = CursorMode.Pointer;
+            //Cursor.applyCursorParams(Cursor.CURSOR_POINTER_PARAMS.graphic, Cursor.CURSOR_POINTER_PARAMS);
+        } else {
+            Cursor.cursorMode = CursorMode.Default;
+        }
+
+        if (FlxG.mouse.justPressed) {
+            FunkinSound.playOnce(Paths.sound("chartingSounds/ClickDown"), 1);
+        } else if (FlxG.mouse.justReleased) {
+            FunkinSound.playOnce(Paths.sound("chartingSounds/ClickUp"), 1);
+        }
+
+        var skipMovement = false;
+        for (obj in dropdowns) {
+            skipMovement = obj.open ? true : skipMovement;
+        }
+        for (obj in windows) {
+            if (obj != null) {
+                try {
+                    if (FlxG.mouse.overlaps(obj)) {
+                        skipMovement = true;
+                    }
+                    if (obj.maximized) {
+                        obj.windowManager.restoreWindow(obj); 
+                    }
+                } catch (e:Exception) {
+                    // Do nothing about it
+                }
+               
+            }
+        }
+        updateWindowHitboxIG();
+
+        if (!skipMovement) {
+            if (FlxG.mouse.pressed) {
+                targetCamPos[0] -= FlxG.mouse.deltaX/zoomTarget;
+                targetCamPos[1] -= FlxG.mouse.deltaY/zoomTarget;
+            }
+            camCHAR.scroll.x = MathUtil.coolLerp(camCHAR.scroll.x, targetCamPos[0], 0.2);
+            camCHAR.scroll.y = MathUtil.coolLerp(camCHAR.scroll.y, targetCamPos[1], 0.2);
+        } 
+
+
+
+        var index:Int = 0;
+        for (obj in dropdowns) {
+            if (doClose[index]) {
+                obj.open = false;
+            }
+            index++;
+        }
+
+
+
+        curAnimText.text = "Cur Anim: " + curChar.animation.name;
+        curAnimText.updateHitbox();
+        curAnimText.screenCenter();
+        curAnimText.alpha = 0.6;
+        curAnimText.cameras = [camHUD];
+        curAnimText.x += 304;
+        curAnimText.y = 14;
+
+        if (curCharFile != null) {
+            for (anim in curCharFile.animations) {
+                if (anim.name == curChar.animation.name) {
+                    infoText.text = "Offsets: [x: " + -anim.offsets[0] + ", y: " + -anim.offsets[1] + "]\nNova Character Editor " + editorVersion; 
+                    infoText.y = FlxG.height-infoText.frameHeight;
+                }
+            }
+        }
+
+        var daThingX = (FlxG.keys.pressed.SHIFT ? 10 : (FlxG.keys.pressed.CONTROL ? 25 : 1)) * (curChar.flipX ? -1 : 1);
+        var daThingY = (FlxG.keys.pressed.SHIFT ? 10 : (FlxG.keys.pressed.CONTROL ? 25 : 1)) * (curChar.flipY ? -1 : 1);
+        if (FlxG.keys.justPressed.LEFT) {
+            setCurrentOffsetX(getCurrentOffsetX()+daThingX);
+        }
+        if (FlxG.keys.justPressed.RIGHT) {
+            setCurrentOffsetX(getCurrentOffsetX()-daThingY);
+        }
+        if (FlxG.keys.justPressed.UP) {
+            setCurrentOffsetY(getCurrentOffsetY()+daThingX);
+        }
+        if (FlxG.keys.justPressed.DOWN) {
+            setCurrentOffsetY(getCurrentOffsetY()-daThingY);
+        }
+
+        WindowUtil.setWindowTitle(windowTitlePrefix + "Friday Night Funkin'" + windowTitleSuffix);
+        
+    }
+
+    function destroy() {
+        super.destroy();
+        WindowUtil.setWindowTitle("Friday Night Funkin'");
+    }
+}
