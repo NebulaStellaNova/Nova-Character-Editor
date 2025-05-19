@@ -255,7 +255,9 @@ class CharacterEditor extends MusicBeatState {
         
         var button = getButton(100, 10, "Character", ()-> {
             trace("ran");
+            var buttons = [];
             dropdowns[1].open = !dropdowns[1].open;
+            
             //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         }, 150);
         buttons.push(button);
@@ -267,7 +269,42 @@ class CharacterEditor extends MusicBeatState {
         buttons.push(button);
 
         var button = getButton(FlxG.width - 215, 10, "Characters", ()-> {
-            dropdowns[3].open = !dropdowns[3].open;
+            //dropdowns[3].open = !dropdowns[3].open;
+            var buttons = [];
+            var index = 0;
+            for (charFile in charFiles) {
+                if (charFile != null) {
+                    var daButton = new Button();
+                    daButton.text = charFile.name;
+                    daButton.onClick = ()-> {
+                        trace(charFile);
+                        var path;
+                        var charIndex = 0;
+                        for (i in charFiles) {
+                            if (i.name == charFile.name) {
+                                path = paths[charIndex];
+                                break;
+                            }
+                            charIndex++;
+                        }
+                        loadCharacter(charFile, paths[charIndex]);
+                        FunkinSound.playOnce(Paths.sound("chartingSounds/noteLay"), 1);
+                        for (i in windows) {
+                            i.windowManager.closeWindow(i);
+                        }
+                    };
+                    daButton.width = 165;
+                    buttons.push(daButton);
+                }   
+                index++;
+            }
+            var window = openWindow("Select Character", buttons);
+            window.x = FlxG.width - 215;
+            window.y = 32;
+            window.width = 200;
+            
+                
+            
             //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         }, 200);
         buttons.push(button);
@@ -911,7 +948,9 @@ class CharacterEditor extends MusicBeatState {
                             } else {
                                 title = charFile.name;
                             }
-                            paths.push("mods/" + i + "/data/characters/" + file);
+                            var daPath = "mods/" + i + "/data/characters/" + file;
+                            trace(daPath);
+                            paths.push(daPath);
                             var daButton = getButton(FlxG.width - 215, 32 + (22*charIndex), title, ()-> {
                                 loadCharacter(charFile, "mods/" + i + "/data/characters/" + file);
                                 FunkinSound.playOnce(Paths.sound("chartingSounds/noteLay"), 1);
@@ -919,7 +958,6 @@ class CharacterEditor extends MusicBeatState {
                                     i.windowManager.closeWindow(i);
                                 }
                             }, 200);
-                            trace(daButton.label);
                             charactersDropdown.buttons.push(daButton);
                             trace(title);
                             charIndex++;
@@ -1263,6 +1301,8 @@ class CharacterEditor extends MusicBeatState {
     var timer = 0;
     var targetCamPos = [0, 0];
 
+    var windowTargetY = [];
+
     
     function update(elapsed) {
         super.update(elapsed);
@@ -1284,12 +1324,20 @@ class CharacterEditor extends MusicBeatState {
         unsavedChanges = !checkIfMatching(curCharFile, prevCharFile);
 
         disableInput = false;
+        var windowIndex = 0;
         for (i in windows) {
+            if (windowTargetY[windowIndex] == null) {
+                windowTargetY[windowIndex] = i.y;
+            } else {
+                i.y = MathUtil.coolLerp(i.y, windowTargetY[windowIndex], 0.2);
+            }
             if (i.visible) {
                 if (FlxG.mouse.overlaps(i)) {
                     disableInput = true;
+                    windowTargetY[windowIndex] += FlxG.mouse.wheel*25;
                 }
             }
+            windowIndex++;
         }
         
         if (FlxG.keys.justPressed.R && !disableInput) {
@@ -1379,11 +1427,13 @@ class CharacterEditor extends MusicBeatState {
         if (FlxG.keys.justPressed.SPACE && !disableInput) {
             curChar.animation.play(curChar.animation.name, true);
         }
-        zoomTarget += FlxG.mouse.wheel/10;
-        if (zoomTarget < 0) {
-            zoomTarget = 0;
+        if (!disableInput) {
+            zoomTarget += FlxG.mouse.wheel/10;
+            if (zoomTarget < 0) {
+                zoomTarget = 0;
+            }
+            camCHAR.zoom = MathUtil.coolLerp(camCHAR.zoom, zoomTarget, 0.1); 
         }
-        camCHAR.zoom = MathUtil.coolLerp(camCHAR.zoom, zoomTarget, 0.1); 
 
         var index:Int = 0;
         var doClose = [];
@@ -1453,7 +1503,7 @@ class CharacterEditor extends MusicBeatState {
         }
         updateWindowHitboxIG();
 
-        if (!skipMovement) {
+        if (!skipMovement && !disableInput) {
             if (FlxG.mouse.pressed) {
                 targetCamPos[0] -= FlxG.mouse.deltaX/zoomTarget;
                 targetCamPos[1] -= FlxG.mouse.deltaY/zoomTarget;
