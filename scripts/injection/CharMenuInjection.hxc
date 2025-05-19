@@ -1,4 +1,4 @@
-import FlxG;
+import flixel.FlxG;
 import funkin.modding.module.Module;
 import funkin.ui.debug.DebugMenuSubState;
 import funkin.modding.base.ScriptedMusicBeatState;
