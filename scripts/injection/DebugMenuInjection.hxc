@@ -20,7 +20,7 @@ class AnimInjection extends Module
 {
     public function new()
     {
-        super('custom-debug-injection');
+        super('custom-debug');
     }
 
     override function onSubStateOpenEnd(event:SubStateScriptEvent) {

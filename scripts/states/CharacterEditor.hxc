@@ -929,7 +929,11 @@ class CharacterEditor extends MusicBeatState {
                 }
             }
         }
-        loadCharacter(charFiles[0], paths[0]);
+        var index = 0;
+        while (charFiles[index] == null) {
+            index++;
+        }
+        loadCharacter(charFiles[index], paths[index]);
 
         dropdowns.push(charactersDropdown);
 
