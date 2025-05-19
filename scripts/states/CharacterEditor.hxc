@@ -100,6 +100,8 @@ class CharacterEditor extends MusicBeatState {
     
     var windows = [];
 
+    var daHeightThing = 0;
+
     /*function getPath(file:String) {
         return paths + file;
     }*/
@@ -655,6 +657,7 @@ class CharacterEditor extends MusicBeatState {
                     deleteCurAnim();
                 }, 150),
                 getButton(100, 32  + (22*3), "Edit Character Info", ()-> {
+                    var daWindow;
                     var healthIconButton = new Button();
                     healthIconButton.text = "Icon Properties";
                     healthIconButton.onClick = ()->{
@@ -796,9 +799,9 @@ class CharacterEditor extends MusicBeatState {
                         isPixelBox.addComponent(isPixelLabel);
                         isPixelBox.addComponent(isPixelCheck);
 
-                        var window = openWindow("Icon Properties", [idBox, scaleBox, offsetsBox, isPixelBox, flipXBox, flipYBox], 300, 220);
+                        var window = openWindow("Icon Properties", [idBox, scaleBox, offsetsBox, isPixelBox, flipXBox, flipYBox], 350, null);
                         window.x = 4;
-                        window.y = 385 + 20;
+                        window.y = daHeightThing + 50;
                     }
 
                     //var test = new TextDisplay();
@@ -903,6 +906,7 @@ class CharacterEditor extends MusicBeatState {
                             loadCharacter(curCharFile, null, true);
                         }
                     }
+                    assetPath.width = 200;
                     textFields.push(assetPath);
 
                     var assetPathBox = new HBox();
@@ -1001,7 +1005,7 @@ class CharacterEditor extends MusicBeatState {
                     scaleBox.addComponent(scaleLabel);
                     scaleBox.addComponent(scaleStepper);
 
-                    var daWindow = openWindow("Character Info", [
+                    daWindow = openWindow("Character Info", [
                         nameBox, 
                         assetPathBox,
                         startingAnimationBox, 
@@ -1013,9 +1017,10 @@ class CharacterEditor extends MusicBeatState {
                         flipXBox,
                         flipYBox,
                         healthIconButton
-                    ], 300, 385);
+                    ], 350, null);
                     daWindow.x = 4;
                     daWindow.y = 50;
+                    daHeightThing = daWindow.height;
                 }, 150)
             ]
         });
