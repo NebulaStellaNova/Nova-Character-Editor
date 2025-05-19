@@ -1357,7 +1357,7 @@ class CharacterEditor extends MusicBeatState {
                         thing.scale.set(daScale, daScale);
                         var offsetX = anim.offsets[0] * daScale;
                         var offsetY = anim.offsets[1] * daScale;
-                        //thing.x = ((FlxG.width/2) - ((thing.width/2)*daScale)) - (thing.flipX ? -offsetX : offsetX);
+                        thing.x = ((FlxG.width/2) - ((thing.width/2)*daScale)) - (thing.flipX ? -offsetX : offsetX);
                         thing.y = ((FlxG.height/2) - ((thing.height/2)*daScale)) - offsetY;
                         if (curCharFile.offsets != null) {
                             thing.x += curCharFile.offsets[0];
