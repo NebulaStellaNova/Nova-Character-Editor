@@ -885,6 +885,9 @@ class CharacterEditor extends MusicBeatState {
                 getButton(265, 32, "Clear Anim Offsets", ()-> {
                     setCurrentOffsetX(0);
                     setCurrentOffsetY(0);
+                }, 170),
+                getButton(265, 32+(22), "Reset Camera", ()-> {
+                    targetCamPos = [0, 0];
                 }, 170)
             ]
         });
