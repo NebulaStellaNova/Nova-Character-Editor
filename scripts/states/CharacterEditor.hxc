@@ -1,4 +1,5 @@
 import Xml;
+import Type;
 import Reflect;
 import haxe.Json;
 import StringTools;
@@ -55,6 +56,8 @@ class CharacterEditor extends MusicBeatState {
 
     var windowTitleSuffix = "";
     var windowTitlePrefix = "";
+    
+    var unsavedChanges = false;
 
     var bg:FunkinSprite;
 
@@ -75,6 +78,8 @@ class CharacterEditor extends MusicBeatState {
         open: false,
         buttons: []
     };
+
+    var disableInput = false;
 
     var onionSkin:BaseCharacter;
     var curChar:BaseCharacter;
@@ -132,24 +137,33 @@ class CharacterEditor extends MusicBeatState {
         
     var windowManager = new WindowManager();
 
-    function openWindow(title:String, children:Array, ?width, ?height) {
+    function openWindow(title:String, children:Array, ?width, ?height, ?color) {
         var window = new Window();
         
+        if (color != null) {
+            window.color = color;
+        }
+
         for (i in windows) {
             if (i.title == title) {
                 i.windowManager.closeWindow(i);
-                return;
+                return window;
             }
         }
+        
+        FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         
         window.windowManager = windowManager;
 
         window.title = title;
         window.x = 200;
         window.y = 200;
-        //if (width != null)
-        window.width = width != null ? width : 200;
-        window.height = height != null ? height : 100;
+        if (width != null) {
+            window.width = width;
+        }
+        if (height != null) {
+            window.height = height;
+        }
         //window.draggable = true;
         window.maximizable = false;
         window.minimizable = false;
@@ -159,6 +173,7 @@ class CharacterEditor extends MusicBeatState {
         }
         windows.push(window);
         add(window);
+        return window;
     }
 
     function getButton(x:Int = 0, y:Int = 0, title:String, callback = ()->{}, ?width, ?forceHide = false, ?height, ?skipCallback=false) {
@@ -183,8 +198,13 @@ class CharacterEditor extends MusicBeatState {
 
     var curView = "SPRITESHEET";
 
+    var textFields = [];
+
     function create() {
         super.create();
+
+        FunkinSound.playMusic("chartEditorLoop", {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+        FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
 
         var currentFolder = "??";
         for (mod in PolymodHandler.getAllMods()) {
@@ -229,32 +249,32 @@ class CharacterEditor extends MusicBeatState {
         
         var button = getButton(10, 10, "File", ()-> {
             dropdowns[0].open = !dropdowns[0].open;
-            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+            //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         }, 75);
         buttons.push(button);
         
         var button = getButton(100, 10, "Character", ()-> {
             trace("ran");
             dropdowns[1].open = !dropdowns[1].open;
-            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+            //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         }, 150);
         buttons.push(button);
 
-        var button = getButton(265, 10, "Offsets", ()-> {
+        var button = getButton(265, 10, "Tools", ()-> {
             dropdowns[2].open = !dropdowns[2].open;
-            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
-        }, 120);
+            //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+        }, 170);
         buttons.push(button);
 
         var button = getButton(FlxG.width - 215, 10, "Characters", ()-> {
             dropdowns[3].open = !dropdowns[3].open;
-            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+            //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         }, 200);
         buttons.push(button);
 
-        var button = getButton(400, 10, "Converters", ()-> {
+        var button = getButton(450, 10, "Converters", ()-> {
             dropdowns[5].open = !dropdowns[5].open;
-            FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+            //FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
         }, 200);
         buttons.push(button);
 
@@ -272,7 +292,55 @@ class CharacterEditor extends MusicBeatState {
                     saveCharacterAs();
                 }, 75)
                 getButton(10, 32  + (22*3), "Exit", ()-> {
-                    FlxG.switchState(new MainMenuState());
+                    if (!unsavedChanges) {
+                        FlxG.switchState(new MainMenuState());
+                    } else {
+                        var children = [];
+                        var lines = [
+                            "Your changes will be lost",
+                            "if you don't save them.",
+                            "(Can't be recovered)",
+                            "",
+                            "Would you like to cancel?"
+                        ];
+                        for (i in lines) {
+                            var label = new Label();
+                            label.text = i;
+                            children.push(label);
+                        }
+                        
+
+                        var cancel = new Button();
+                        cancel.text = "Cancel";
+                        cancel.onClick = ()->{
+                            windows[windows.length-1].windowManager.closeWindow(windows[windows.length-1]);
+                        }
+                        cancel.color = 0xFFFFFF00;
+
+                        var exitToMenu = new Button();
+                        exitToMenu.text = "Exit To Menu";
+                        exitToMenu.onClick = ()->{
+                            FlxG.switchState(new MainMenuState());
+                        }
+                        exitToMenu.color = 0xFFFF0000;
+
+                        var saveAndExit = new Button();
+                        saveAndExit.text = "Save & Exit To Menu";
+                        saveAndExit.onClick = ()->{
+                            saveCharacter();
+                            FlxG.switchState(new MainMenuState());
+                        }
+                        saveAndExit.color = 0xFF00FF00;
+
+                        var box = new HBox();
+                        box.addComponent(cancel);
+                        box.addComponent(exitToMenu);
+                        box.addComponent(saveAndExit);
+                        children.push(box);
+                        
+                        var daWindow = openWindow("Unsaved Changes! (This may be incorrect)", children, null, null, 0xFFFF0000);
+                        daWindow.screenCenter();
+                    }
                 }, 75)
             ]
         });
@@ -282,17 +350,213 @@ class CharacterEditor extends MusicBeatState {
             open: false,
             buttons: [
                 getButton(100, 32, "New Animation", ()-> {
+                    // -- Name -- \\
+                    var nameLabel = new Label();
+                    nameLabel.text = "Name:";
+                    nameLabel.marginTop = 7;
+                    //nameLabel.width = 70;
+                    
+                    var name = new TextField();
+                    name.placeholder = "...";
+                    name.color = 0xFFaaaaaa;
+                    textFields.push(name);
+
+                    var nameBox = new HBox();
+                    nameBox.addComponent(nameLabel);
+                    nameBox.addComponent(name);
+
+                    // -- Name -- \\
+                    var prefixLabel = new Label();
+                    prefixLabel.text = "Prefix:";
+                    prefixLabel.marginTop = 7;
+                    //prefixLabel.width = 70;
+                    
+                    var prefix = new TextField();
+                    prefix.placeholder = "...";
+                    prefix.color = 0xFFaaaaaa;
+                    textFields.push(prefix);
+
+                    var prefixBox = new HBox();
+                    prefixBox.addComponent(prefixLabel);
+                    prefixBox.addComponent(prefix);
+
+                    var okButton = new Button();
+                    okButton.text = "OK";
+                    okButton.onClick = ()->{
+                        var daAnimation = {
+                            name: name.text,
+                            prefix: prefix.text,
+                            offsets: [ 0, 0 ],
+                            frameRate: 24,
+                            looped: false,
+                            flipX: false,
+                            flipY: false
+                        };
+                        curCharFile.animations.push(daAnimation);
+                        loadCharacter(curCharFile, null, true);
+                        prefix.focus = false;
+                        name.focus = false;
+                        windows[windows.length-1].windowManager.closeWindow(windows[windows.length-1]);
+                    };
+
+
+                    var window = openWindow("New Animation", [nameBox, prefixBox, okButton]);
+                    window.screenCenter();
                 }, 150),
                 getButton(100, 32 + (22), "Edit Animation", ()-> {
+
+                    var curAnim = getCurAnimData();
+                    if (curAnim.flipX = null) {
+                        curAnim.flipX = false;
+                    }
+                    if (curAnim.flipY = null) {
+                        curAnim.flipY = false;
+                    }
+                    // -- Name -- \\
+                    var nameLabel = new Label();
+                    nameLabel.text = "Name:";
+                    nameLabel.marginTop = 7;
+
+                    var name = new TextField();
+                    name.text = curAnim.name;
+                    name.color = 0xFFaaaaaa;
+                    name.onChange = ()->{
+                        curAnim.name = name.text;
+                        loadCharacter(curCharFile, null, true);
+                    }
+                    textFields.push(name);
+
+                    var nameBox = new HBox();
+                    nameBox.addComponent(nameLabel);
+                    nameBox.addComponent(name);
+                    
+                    // -- Prefix -- \\
+                    var prefixLabel = new Label();
+                    prefixLabel.text = "Prefix:";
+                    prefixLabel.marginTop = 7;
+
+                    var prefix = new TextField();
+                    prefix.text = curAnim.prefix;
+                    prefix.onChange = ()->{
+                        curAnim.prefix = prefix.text;
+                        loadCharacter(curCharFile, null, true);
+                    }
+                    prefix.color = 0xFFaaaaaa;
+                    textFields.push(prefix);
+
+                    var prefixBox = new HBox();
+                    prefixBox.addComponent(prefixLabel);
+                    prefixBox.addComponent(prefix);
+
+                    // -- Indices -- \\
+                    var frameIndicesLabel = new Label();
+                    frameIndicesLabel.text = "Indices:";
+                    frameIndicesLabel.marginTop = 7;
+
+                    var frameIndices = new TextField();
+                    frameIndices.text = curAnim.frameIndices != null ? curAnim.frameIndices.join(",") : "";
+                    frameIndices.onChange = ()->{
+                        if (frameIndices.text != "") {
+                            curAnim.frameIndices = [];
+                            for (i in frameIndices.text.split(",")) {
+                                curAnim.frameIndices.push(Std.parseInt(i));
+                            }
+                        } else {
+                            curAnim.frameIndices = null;
+                        }
+                        loadCharacter(curCharFile, null, true);
+                    }
+                    frameIndices.color = 0xFFaaaaaa;
+                    textFields.push(frameIndices);
+
+                    var frameIndicesBox = new HBox();
+                    frameIndicesBox.addComponent(frameIndicesLabel);
+                    frameIndicesBox.addComponent(frameIndices);
+
+                    // -- Offsets -- \\
+
+                    if (curAnim.offsets == null) {
+                        curAnim.offsets = [
+                            0,
+                            0
+                        ];
+                    }
+
+                    var offsetsLabel = new Label();
+                    offsetsLabel.text = "Offsets:";
+                    offsetsLabel.marginTop = 7;
+
+                    var xStepper = new NumberStepper();
+                    xStepper.step = 1;
+                    xStepper.pos = curAnim.offsets != null ? curAnim.offsets[0] : 0;
+                    xStepper.width = 65;
+                    xStepper.onChange = ()->{
+                        curAnim.offsets[0] = xStepper.pos;
+                    }
+                    textFields.push(xStepper);
+                    
+                    var yStepper = new NumberStepper();
+                    yStepper.step = 1;
+                    yStepper.pos = curAnim.offsets != null ? curAnim.offsets[1] : 0;
+                    yStepper.width = 65;
+                    yStepper.onChange = ()->{
+                        curAnim.offsets[1] = yStepper.pos;
+                    }
+                    textFields.push(yStepper);
+
+
+                    var offsetsBox = new HBox();
+                    offsetsBox.addComponent(offsetsLabel);
+                    offsetsBox.addComponent(xStepper);
+                    offsetsBox.addComponent(yStepper);
+
+                    // -- Looped -- \\
+                    var loopedCheck = new CheckBox();
+                    loopedCheck.selected = curAnim.looped != null ? curAnim.looped : false;
+                    loopedCheck.onChange = ()->{
+                        curAnim.looped = loopedCheck.selected;
+                        loadCharacter(curCharFile, null, true);
+                    }
+
+                    var loopedLabel = new Label();
+                    loopedLabel.text = "Looped:";
+                    loopedLabel.marginTop = 5;
+
+                    var loopedBox = new HBox();
+                    loopedBox.addComponent(loopedLabel);
+                    loopedBox.addComponent(loopedCheck);
+
+
+                    var window = openWindow("Edit Animation", [nameBox, prefixBox, frameIndicesBox, offsetsBox, loopedBox]);
+                    window.screenCenter();
+
                 }, 150),
-                getButton(100, 32 + (22*1), "Delete Cur Animation", ()-> {
+                getButton(100, 32 + (22*2), "Delete Cur Animation", ()-> {
                     deleteCurAnim();
                 }, 150),
-                getButton(100, 32  + (22*2), "Edit Character Info", ()-> {
+                getButton(100, 32  + (22*3), "Edit Character Info", ()-> {
                     var healthIconButton = new Button();
                     healthIconButton.text = "Icon Properties";
                     healthIconButton.onClick = ()->{
-                            // -- Flip X -- \\
+                        // -- ID -- \\
+                        var idLabel = new Label();
+                        idLabel.text = "Name:";
+                        idLabel.marginTop = 7;
+                        //idLabel.width = 70;
+                        
+                        var id = new TextField();
+                        id.text = curCharFile.healthIcon.id;
+                        id.onChange = ()->{
+                            curCharFile.healthIcon.id = id.text;
+                        }
+                        id.color = 0xFFaaaaaa;
+                        textFields.push(id);
+
+                        var idBox = new HBox();
+                        idBox.addComponent(idLabel);
+                        idBox.addComponent(id);
+
+                        // -- Flip X -- \\
                         var flipXCheck = new CheckBox();
                         flipXCheck.selected = curCharFile.healthIcon.flipX != null ? curCharFile.healthIcon.flipX : false;
                         flipXCheck.onChange = ()->{
@@ -321,7 +585,78 @@ class CharacterEditor extends MusicBeatState {
                         var flipYBox = new HBox();
                         flipYBox.addComponent(flipYLabel);
                         flipYBox.addComponent(flipYCheck);
-                        openWindow("Icon Properties", [flipXBox, flipYBox], 300, 200);
+
+                        // -- Scale -- \\
+                        var scaleStepper = new NumberStepper();
+                        scaleStepper.step = 0.1;
+                        scaleStepper.pos = curCharFile.healthIcon.scale != null ? curCharFile.healthIcon.scale : 1;
+                        scaleStepper.width = 55;
+                        scaleStepper.min = 0;
+                        scaleStepper.onChange = ()->{
+                            curCharFile.healthIcon.scale = scaleStepper.pos;
+                        }
+                        textFields.push(scaleStepper);
+
+                        var scaleLabel = new Label();
+                        scaleLabel.text = "Scale:";
+                        scaleLabel.marginTop = 7;
+
+                        var scaleBox = new HBox();
+                        scaleBox.addComponent(scaleLabel);
+                        scaleBox.addComponent(scaleStepper);
+
+                        // -- Offsets -- \\
+                        var offsetsLabel = new Label();
+                        offsetsLabel.text = "Offsets:";
+                        offsetsLabel.marginTop = 7;
+
+                        var xStepper = new NumberStepper();
+                        xStepper.step = 1;
+                        xStepper.pos = curCharFile.healthIcon.offsets != null ? curCharFile.healthIcon.offsets[0] : 0;
+                        xStepper.width = 65;
+                        xStepper.onChange = ()->{
+                            curCharFile.healthIcon.offsets[0] = xStepper.pos;
+                        }
+                        textFields.push(xStepper);
+                        
+                        var yStepper = new NumberStepper();
+                        yStepper.step = 1;
+                        yStepper.pos = curCharFile.healthIcon.offsets != null ? curCharFile.healthIcon.offsets[1] : 0;
+                        yStepper.width = 65;
+                        yStepper.onChange = ()->{
+                            curCharFile.healthIcon.offsets[1] = yStepper.pos;
+                        }
+                        textFields.push(yStepper);
+                        if (curCharFile.healthIcon.offsets == null) {
+                            curCharFile.healthIcon.offsets = [
+                                0,
+                                0
+                            ];
+                        }
+
+                        var offsetsBox = new HBox();
+                        offsetsBox.addComponent(offsetsLabel);
+                        offsetsBox.addComponent(xStepper);
+                        offsetsBox.addComponent(yStepper);
+
+                        // -- Is Pixel -- \\
+                        var isPixelCheck = new CheckBox();
+                        isPixelCheck.selected = curCharFile.healthIcon.isPixel != null ? curCharFile.healthIcon.isPixel : false;
+                        isPixelCheck.onChange = ()->{
+                            curCharFile.healthIcon.isPixel = isPixelCheck.selected;
+                        }
+
+                        var isPixelLabel = new Label();
+                        isPixelLabel.text = "Is Pixel:";
+                        isPixelLabel.marginTop = 5;
+
+                        var isPixelBox = new HBox();
+                        isPixelBox.addComponent(isPixelLabel);
+                        isPixelBox.addComponent(isPixelCheck);
+
+                        var window = openWindow("Icon Properties", [idBox, scaleBox, offsetsBox, isPixelBox, flipXBox, flipYBox], 300, 220);
+                        window.x = 4;
+                        window.y = 400;
                     }
 
                     //var test = new TextDisplay();
@@ -357,7 +692,40 @@ class CharacterEditor extends MusicBeatState {
                     flipYBox.addComponent(flipYLabel);
                     flipYBox.addComponent(flipYCheck);
 
-                    // -- ASSet Path -- \\
+                    // -- Is Pixel -- \\
+                    var isPixelCheck = new CheckBox();
+                    isPixelCheck.selected = curCharFile.isPixel != null ? curCharFile.isPixel : false;
+                    isPixelCheck.onChange = ()->{
+                        curCharFile.isPixel = isPixelCheck.selected;
+                    }
+
+                    var isPixelLabel = new Label();
+                    isPixelLabel.text = "Is Pixel:";
+                    isPixelLabel.marginTop = 5;
+
+                    var isPixelBox = new HBox();
+                    isPixelBox.addComponent(isPixelLabel);
+                    isPixelBox.addComponent(isPixelCheck);
+
+                    // -- Name -- \\
+                    var startingAnimationLabel = new Label();
+                    startingAnimationLabel.text = "Starting Animation:";
+                    startingAnimationLabel.marginTop = 7;
+                    //nameLabel.width = 70;
+                    
+                    var startingAnimation = new TextField();
+                    startingAnimation.text = curCharFile.startingAnimation != null ? curCharFile.startingAnimation : "idle";
+                    startingAnimation.onChange = ()->{
+                        curCharFile.startingAnimation = startingAnimation.text;
+                    }
+                    startingAnimation.color = 0xFFaaaaaa;
+                    textFields.push(startingAnimation);
+
+                    var startingAnimationBox = new HBox();
+                    startingAnimationBox.addComponent(startingAnimationLabel);
+                    startingAnimationBox.addComponent(startingAnimation);
+
+                    // -- Name -- \\
                     var nameLabel = new Label();
                     nameLabel.text = "Name:";
                     nameLabel.marginTop = 7;
@@ -368,6 +736,8 @@ class CharacterEditor extends MusicBeatState {
                     name.onChange = ()->{
                         curCharFile.name = name.text;
                     }
+                    name.color = 0xFFaaaaaa;
+                    textFields.push(name);
 
                     var nameBox = new HBox();
                     nameBox.addComponent(nameLabel);
@@ -381,16 +751,129 @@ class CharacterEditor extends MusicBeatState {
                     
                     var assetPath = new TextField();
                     assetPath.text = curCharFile.assetPath;
+                    trace(assetPath.color);
                     assetPath.onChange = ()->{
-                        curCharFile.assetPath = assetPath.text;
+                        if (!checkFileExists("assets/shared/images/" + assetPath.text + ".png") && !FileUtil.fileExists("assets/shared/images/" + assetPath.text + ".png")) {
+                            assetPath.color = 0xFFFF0000;
+                        } else {
+                            assetPath.color = 0xFFaaaaaa;
+                            curCharFile.assetPath = assetPath.text;
+                            loadCharacter(curCharFile, null, true);
+                        }
                     }
+                    textFields.push(assetPath);
 
                     var assetPathBox = new HBox();
                     assetPathBox.addComponent(assetPathLabel);
                     assetPathBox.addComponent(assetPath);
         
+                    // -- Sing Time -- \\
+                    var singTimeStepper = new NumberStepper();
+                    singTimeStepper.step = 1;
+                    singTimeStepper.pos = curCharFile.singTime;
+                    singTimeStepper.width = 55;
+                    singTimeStepper.max = 99;
+                    singTimeStepper.min = 1;
+                    singTimeStepper.onChange = ()->{
+                        curCharFile.singTime = singTimeStepper.pos;
+                    }
+                    textFields.push(singTimeStepper);
 
-                    openWindow("Character Info", [nameBox, assetPathBox, flipXBox, flipYBox,healthIconButton], 300, 200);
+                    var singTimeLabel = new Label();
+                    singTimeLabel.text = "Sing Time:";
+                    singTimeLabel.marginTop = 7;
+
+                    var singTimeBox = new HBox();
+                    singTimeBox.addComponent(singTimeLabel);
+                    singTimeBox.addComponent(singTimeStepper);
+
+                    // -- Offsets -- \\
+                    var offsetsLabel = new Label();
+                    offsetsLabel.text = "Offsets:";
+                    offsetsLabel.marginTop = 7;
+
+                    var xStepper = new NumberStepper();
+                    xStepper.step = 1;
+                    xStepper.pos = curCharFile.offsets != null ? curCharFile.offsets[0] : 0;
+                    xStepper.width = 65;
+                    xStepper.onChange = ()->{
+                        curCharFile.offsets[0] = xStepper.pos;
+                    }
+                    textFields.push(xStepper);
+                    
+                    var yStepper = new NumberStepper();
+                    yStepper.step = 1;
+                    yStepper.pos = curCharFile.offsets != null ? curCharFile.offsets[1] : 0;
+                    yStepper.width = 65;
+                    yStepper.onChange = ()->{
+                        curCharFile.offsets[1] = yStepper.pos;
+                    }
+                    textFields.push(yStepper);
+                    if (curCharFile.offsets == null) {
+                        curCharFile.offsets = [
+                            0,
+                            0
+                        ];
+                    }
+
+                    var offsetsBox = new HBox();
+                    offsetsBox.addComponent(offsetsLabel);
+                    offsetsBox.addComponent(xStepper);
+                    offsetsBox.addComponent(yStepper);
+
+                    // -- Dance Inteval -- \\
+                    var danceStepper = new NumberStepper();
+                    danceStepper.step = 1;
+                    danceStepper.pos = curCharFile.danceEvery != null ? curCharFile.danceEvery : 1;
+                    danceStepper.width = 55;
+                    danceStepper.min = 1;
+                    danceStepper.onChange = ()->{
+                        curCharFile.danceEvery = danceStepper.pos;
+                    }
+                    textFields.push(danceStepper);
+
+                    var danceLabel = new Label();
+                    danceLabel.text = "Dance Interval:";
+                    danceLabel.marginTop = 7;
+
+                    var danceBox = new HBox();
+                    danceBox.addComponent(danceLabel);
+                    danceBox.addComponent(danceStepper);
+
+                    // -- Scale -- \\
+                    var scaleStepper = new NumberStepper();
+                    scaleStepper.step = 0.1;
+                    scaleStepper.pos = curCharFile.scale != null ? curCharFile.scale : 1;
+                    scaleStepper.width = 55;
+                    scaleStepper.min = 0;
+                    scaleStepper.onChange = ()->{
+                        curCharFile.scale = scaleStepper.pos;
+                    }
+                    textFields.push(scaleStepper);
+
+                    var scaleLabel = new Label();
+                    scaleLabel.text = "Scale:";
+                    scaleLabel.marginTop = 7;
+
+                    var scaleBox = new HBox();
+                    scaleBox.addComponent(scaleLabel);
+                    scaleBox.addComponent(scaleStepper);
+
+                    var daWindow = openWindow("Character Info", [
+                        nameBox, 
+                        assetPathBox,
+                        startingAnimationBox, 
+                        offsetsBox, 
+                        scaleBox, 
+                        singTimeBox, 
+                        danceBox,
+                        isPixelBox,
+                        flipXBox,
+                        flipYBox,
+                        healthIconButton
+                    ], 300, 350);
+                    daWindow.x = 4;
+                    daWindow.y = 50;
                 }, 150)
             ]
         });
@@ -402,7 +885,7 @@ class CharacterEditor extends MusicBeatState {
                 getButton(265, 32, "Clear Anim Offsets", ()-> {
                     setCurrentOffsetX(0);
                     setCurrentOffsetY(0);
-                }, 120)
+                }, 170)
             ]
         });
 
@@ -429,6 +912,9 @@ class CharacterEditor extends MusicBeatState {
                             var daButton = getButton(FlxG.width - 215, 32 + (22*charIndex), title, ()-> {
                                 loadCharacter(charFile, "mods/" + i + "/data/characters/" + file);
                                 FunkinSound.playOnce(Paths.sound("chartingSounds/noteLay"), 1);
+                                for (i in windows) {
+                                    i.windowManager.closeWindow(i);
+                                }
                             }, 200);
                             trace(daButton.label);
                             charactersDropdown.buttons.push(daButton);
@@ -460,7 +946,7 @@ class CharacterEditor extends MusicBeatState {
         dropdowns.push({
             open: false,
             buttons: [
-                getButton(400, 32 + (22*0), "Psych to V-Slice", ()-> {
+                getButton(450, 32 + (22*0), "Psych to V-Slice", ()-> {
                     FileUtil.browseForTextFile("Select Psych Engine Character File", [FileUtil.FILE_FILTER_JSON], (data)->{
                         var convertedFile = Converters.scriptCall("charFromPsych", [Json.parse(data.text)]);
                         FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (destPath)->{
@@ -469,7 +955,7 @@ class CharacterEditor extends MusicBeatState {
                         }, null, data.name);
                     });
                 }, 200),
-                getButton(400, 32 + (22*1), "Codename to V-Slice", ()-> {
+                getButton(450, 32 + (22*1), "Codename to V-Slice", ()-> {
                     FileUtil.browseForTextFile("Select Codename Engine Character File", [FILE_FILTER_XML], (data)->{
                         var convertedFile = Converters.scriptCall("charFromCNE", [Xml.parse(data.text)]);
                         FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (destPath)->{
@@ -531,23 +1017,44 @@ class CharacterEditor extends MusicBeatState {
         };
         test.animations.remove("test2");
         trace(test);
-
-
-
-        //button.allowFocus = true;
-        //button.allowInteraction = true;
-        //button.marginLeft = x;
-        //button.marginTop = y;
-
         
     }
 
+    function copyObj(from) {
+        var daObj = {};
+        var things = [];
+        for (i in ReflectUtil.getFieldsOf(from)) {
+            things.push(i.toString());
+        }
+        for (i in things) {
+            ReflectUtil.setField(daObj, i, ReflectUtil.getField(from, i));
+        }
+        return daObj;
+    }
 
+    function checkIfMatching(obj1, obj2) {
+        var matching = true;
+        var things = [];
+        for (i in ReflectUtil.getFieldsOf(obj1)) {
+            things.push(i.toString());
+        }
+        for (i in things) {
+            var value1 = ReflectUtil.getField(obj1, i)+"";
+            var value2 = ReflectUtil.getField(obj2, i)+"";
+            if (value1 != value2) {
+                matching = false;
+            }
+        }
+        return matching;
+        //for (i in ["flipX", "flipY", "offsets", "name", "scale"])
+    }
 
-    function loadCharacter(charFile, path) {
+    var prevCharFile;
+    function loadCharacter(charFile, path, ?skip = false) {
         trace(path);
         currentPath = path;
         curCharFile = charFile;
+        
         curChar.frames = Paths.getSparrowAtlas(charFile.assetPath); 
         var animIndex:Int = 0;
         for (i in forceHidden) {
@@ -569,7 +1076,6 @@ class CharacterEditor extends MusicBeatState {
         if (curChar.animation.exists("danceLeft")) {
             curChar.animation.play("danceLeft");
         }
-        curChar.flipX = charFile.flipX == null ? false : charFile.flipX; 
         curChar.updateHitbox();
         curChar.screenCenter();
 
@@ -594,16 +1100,37 @@ class CharacterEditor extends MusicBeatState {
         if (onionSkin.animation.exists("danceLeft")) {
             onionSkin.animation.play("danceLeft");
         }
-        onionSkin.flipX = charFile.flipX == null ? false : charFile.flipX; 
         onionSkin.updateHitbox();
         onionSkin.screenCenter();
+        if (curCharFile.offsets == null) {
+            curCharFile.offsets = [0, 0];
+        }
 
         curCharacter = charFile.name;
         windowTitleSuffix = " - " + curCharacter;
+
+        if (!skip) {
+            prevCharFile = parseJsonFile(path);
+            if (prevCharFile.offsets == null) {
+                prevCharFile.offsets = [0, 0];
+            }
+        }
+        //camCHAR.zoom = 0.8;
+        curChar.animation.finish();
+        onionSkin.animation.finish();
+    }
+
+    function getCurAnimData() {
+        for (i in curCharFile.animations) {
+            if (i.name == curChar.animation.name) {
+                return i;
+            }
+        }
     }
 
     function deleteCurAnim() {
-        windowTitleSuffix = " - " + curCharacter + " *";
+        //windowTitleSuffix = " - " + curCharacter + " *";
+        unsavedChanges = true;
         if (curCharFile != null) {
             for (anim in curCharFile.animations) {
                 if (anim.name == curChar.animation.name) {
@@ -641,7 +1168,8 @@ class CharacterEditor extends MusicBeatState {
                 }
             }
         }
-        windowTitleSuffix = " - " + curCharacter + " *";
+        //unsavedChanges = true;
+        //windowTitleSuffix = " - " + curCharacter + " *";
     }
     
     function setCurrentOffsetY(y:Int) {
@@ -652,12 +1180,13 @@ class CharacterEditor extends MusicBeatState {
                 }
             }
         }
-        windowTitleSuffix = " - " + curCharacter + " *";
+        //unsavedChanges = true;
+        //windowTitleSuffix = " - " + curCharacter + " *";
     }
 
     function merge(base: Dynamic, ext: Dynamic) {
         var res = ReflectUtil.copy(base);
-        for(f in ReflectUtil.getAnonymousFieldsOf(ext)) ReflectUtil.setAnonymousField(res,f,Reflect.getAnonymousField(res,f));
+        for(f in ReflectUtil.getAnonymousFieldsOf(ext)) ReflectUtil.setAnonymousField(res,f,ReflectUtil.getAnonymousField(res,f));
         return res;
     }
 
@@ -665,11 +1194,12 @@ class CharacterEditor extends MusicBeatState {
         var generatedBy = "Nova Character Editor " + editorVersion;
         jsonFile.generatedBy = generatedBy;
         var fileString = Json.stringify(jsonFile, null, "\t");
-        if (checkFileExists(path)) {
+        //if (checkFileExists(path)) {
             FileUtil.deleteFile(path);
-        }
+        //}
         FileUtil.writeStringToPath(path, fileString);
-        windowTitleSuffix = StringTools.replace(windowTitleSuffix, " *", "");
+        unsavedChanges = false;
+        //windowTitleSuffix = StringTools.replace(windowTitleSuffix, " *", "");
     }
 
     function fixPath(path) {
@@ -696,6 +1226,7 @@ class CharacterEditor extends MusicBeatState {
     function saveCharacterAs() {
         FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
             writeCharFile(fixPath(path), curCharFile);
+            FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
         }, null, currentPath);
     }
 
@@ -724,10 +1255,37 @@ class CharacterEditor extends MusicBeatState {
     var zoomTarget = 0.8;
     var timer = 0;
     var targetCamPos = [0, 0];
+
+    
     function update(elapsed) {
         super.update(elapsed);
+        // for (i in curCharFile.animations) {
+        //     if (i.flipX+"" == "null") {
+        //         ReflectUtil.setField(i, "flipX", false);
+        //         trace(i);
+        //     }
+        //     if (i.flipY+"" == "null") {
+        //         ReflectUtil.setField(i, "flipY", false);
+        //         trace(i);
+        //     }
+        // }
         
-        if (FlxG.keys.justPressed.R) {
+        // trace(getCurAnimData().flipX);
+        //trace(prevCharFile == curCharFile);
+        //trace(prevCharFile.offsets);
+        //trace(curCharFile.offsets);
+        unsavedChanges = !checkIfMatching(curCharFile, prevCharFile);
+
+        disableInput = false;
+        for (i in windows) {
+            if (i.visible) {
+                if (FlxG.mouse.overlaps(i)) {
+                    disableInput = true;
+                }
+            }
+        }
+        
+        if (FlxG.keys.justPressed.R && !disableInput) {
             FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
         }
         if (controls.BACK) {
@@ -737,7 +1295,7 @@ class CharacterEditor extends MusicBeatState {
        
         
 
-        if (FlxG.keys.justPressed.W) {
+        if (FlxG.keys.justPressed.W && !disableInput) {
             var daChar = FlxG.keys.pressed.SHIFT ? onionSkin : curChar;
             var animIndex = 0;
             for (anim in curCharFile.animations) {
@@ -753,7 +1311,7 @@ class CharacterEditor extends MusicBeatState {
             daChar.animation.play(curCharFile.animations[animIndex].name, true);
         }
 
-        if (FlxG.keys.justPressed.S) {
+        if (FlxG.keys.justPressed.S && !disableInput) {
             var daChar = FlxG.keys.pressed.SHIFT ? onionSkin : curChar;
             var animIndex = 0;
             for (anim in curCharFile.animations) {
@@ -783,14 +1341,23 @@ class CharacterEditor extends MusicBeatState {
             for (anim in curCharFile.animations) {
                 var daScale = curCharFile.scale != null ? curCharFile.scale : 1;
                 for (thing in [curChar, onionSkin]) {
-                    thing.flipX = curCharFile.flipX != null ? curCharFile.flipX : false;
-                    thing.flipY = curCharFile.flipY != null ? curCharFile.flipY : false;
+                    thing.flipX = false; 
+                    if (curCharFile.flipX != null) {
+                        thing.flipX = curCharFile.flipX;
+                    }
+                    thing.flipY = false; 
+                    if (curCharFile.flipY != null) {
+                        if (curCharFile.flipY) {
+                            thing.flipY = !thing.flipY;
+                        }
+                    }
+                    thing.antialiasing = curCharFile.isPixel != null ? !curCharFile.isPixel : true;
                     if (anim.name == thing.animation.name) {
                         //curChar.updateHitbox();
                         thing.scale.set(daScale, daScale);
                         var offsetX = anim.offsets[0] * daScale;
                         var offsetY = anim.offsets[1] * daScale;
-                        thing.x = ((FlxG.width/2) - ((thing.width/2)*daScale)) - (thing.flipX ? -offsetX : offsetX);
+                        //thing.x = ((FlxG.width/2) - ((thing.width/2)*daScale)) - (thing.flipX ? -offsetX : offsetX);
                         thing.y = ((FlxG.height/2) - ((thing.height/2)*daScale)) - offsetY;
                         if (curCharFile.offsets != null) {
                             thing.x += curCharFile.offsets[0];
@@ -802,7 +1369,7 @@ class CharacterEditor extends MusicBeatState {
             
         }
 
-        if (FlxG.keys.justPressed.SPACE) {
+        if (FlxG.keys.justPressed.SPACE && !disableInput) {
             curChar.animation.play(curChar.animation.name, true);
         }
         zoomTarget += FlxG.mouse.wheel/10;
@@ -919,21 +1486,26 @@ class CharacterEditor extends MusicBeatState {
 
         var daThingX = (FlxG.keys.pressed.SHIFT ? 10 : (FlxG.keys.pressed.CONTROL ? 25 : 1)) * (curChar.flipX ? -1 : 1);
         var daThingY = (FlxG.keys.pressed.SHIFT ? 10 : (FlxG.keys.pressed.CONTROL ? 25 : 1)) * (curChar.flipY ? -1 : 1);
-        if (FlxG.keys.justPressed.LEFT) {
+        if (FlxG.keys.justPressed.LEFT && !disableInput) {
             setCurrentOffsetX(getCurrentOffsetX()+daThingX);
         }
-        if (FlxG.keys.justPressed.RIGHT) {
-            setCurrentOffsetX(getCurrentOffsetX()-daThingY);
+        if (FlxG.keys.justPressed.RIGHT && !disableInput) {
+            setCurrentOffsetX(getCurrentOffsetX()-daThingX);
         }
-        if (FlxG.keys.justPressed.UP) {
-            setCurrentOffsetY(getCurrentOffsetY()+daThingX);
+        if (FlxG.keys.justPressed.UP && !disableInput) {
+            setCurrentOffsetY(getCurrentOffsetY()+daThingY);
         }
-        if (FlxG.keys.justPressed.DOWN) {
+        if (FlxG.keys.justPressed.DOWN && !disableInput) {
             setCurrentOffsetY(getCurrentOffsetY()-daThingY);
         }
 
+        windowTitleSuffix = " - " + curCharacter;
+        if (unsavedChanges) {
+            windowTitleSuffix += " *";
+        }
+
         WindowUtil.setWindowTitle(windowTitlePrefix + "Friday Night Funkin'" + windowTitleSuffix);
-        
+        //disableInput = false;
     }
 
     function destroy() {
