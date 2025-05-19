@@ -70,6 +70,8 @@ class CharacterEditor extends MusicBeatState {
     var callbacks = [];
     var dropdowns = [];
     var forceHidden = [];
+    var mods = [];
+    var realDropDowns = [];
 
     var animCallbacks = [];
     var animButtons = [];
@@ -179,6 +181,7 @@ class CharacterEditor extends MusicBeatState {
     function getButton(x:Int = 0, y:Int = 0, title:String, callback = ()->{}, ?width, ?forceHide = false, ?height, ?skipCallback=false) {
         var button = new Button();
         button.text = title;
+        trace(button.fontFamily, button.text);
         button.allowFocus = true;
         button.allowInteraction = true;
         button.marginLeft = x;
@@ -197,6 +200,20 @@ class CharacterEditor extends MusicBeatState {
     }
 
     var curView = "SPRITESHEET";
+
+    function sortDropdownAlphabetically(a, b) {
+        a = a.text.toUpperCase();
+        b = b.text.toUpperCase();
+
+        if (a < b) {
+            return -1;
+        }
+        else if (a > b) {
+            return 1;
+        } else {
+            return 0;
+        }
+    }
 
     var textFields = [];
 
@@ -271,6 +288,31 @@ class CharacterEditor extends MusicBeatState {
         var button = getButton(FlxG.width - 215, 10, "Characters", ()-> {
             //dropdowns[3].open = !dropdowns[3].open;
             var buttons = [];
+            var addedMods = [];
+            for (i in mods) {
+                if (!addedMods.contains(i)) {
+                    var dropDown = new DropDown();
+                    dropDown.text  = i;
+                    dropDown.width = 165;
+                    dropDown.searchable = true;
+                    dropDown.onChange = ()-> {
+                        var charIndex = 0;
+                        for (charFile in charFiles) {
+                            if (charFile.name == dropDown.text) {
+                                loadCharacter(charFile, paths[charIndex]);
+                                FunkinSound.playOnce(Paths.sound("chartingSounds/noteLay"), 1);
+                                for (i in windows) {
+                                    i.windowManager.closeWindow(i);
+                                }
+                            }
+                            charIndex++;
+                        }
+                    }
+                    realDropDowns.push(dropDown);
+                    buttons.push(dropDown);
+                    addedMods.push(i);
+                }
+            }
             var index = 0;
             for (charFile in charFiles) {
                 if (charFile != null) {
@@ -292,11 +334,16 @@ class CharacterEditor extends MusicBeatState {
                         for (i in windows) {
                             i.windowManager.closeWindow(i);
                         }
+                        
                     };
                     daButton.width = 165;
-                    buttons.push(daButton);
+                    buttons[addedMods.indexOf(mods[index])].dataSource.add({text: charFile.name, onChange: daButton.onClick});
+                    //buttons.push(daButton);
                 }   
                 index++;
+            }
+            for (i in buttons) {
+                i.dataSource.sort(sortDropdownAlphabetically);
             }
             var window = openWindow("Select Character", buttons);
             window.x = FlxG.width - 215;
@@ -324,6 +371,42 @@ class CharacterEditor extends MusicBeatState {
                 }, 75),
                 getButton(10, 32 + (22), "Save", ()-> {
                     saveCharacter();
+                    var children = [];
+                    var path = "";
+                    var charIndex = 0;
+                    for (i in charFiles) {
+                        path = paths[charIndex];
+                        charIndex++;
+                    }
+                    loadCharacter(curCharFile, path);
+                    var lines = [
+                        "Saved character: " + curCharFile.name,
+                        "At: " + path
+                    ];
+                    for (i in lines) {
+                        var label = new Label();
+                        label.text = i;
+                        children.push(label);
+                    }
+                    
+                    
+
+                    var ok = new Button();
+                    ok.text = "Ok";
+                    
+                    ok.color = 0xFF00FF00;
+
+
+                    var box = new HBox();
+                    box.addComponent(ok);
+                    children.push(box);
+                    
+                    var daWindow = openWindow("Saved Character!", children, null, null, 0xFF00FF00);
+                    daWindow.screenCenter();
+                    ok.onClick = ()->{
+                        daWindow.windowManager.closeWindow(daWindow);
+                        FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
+                    }
                 }, 75),
                 getButton(10, 32 + (22*2), "Save As", ()-> {
                     saveCharacterAs();
@@ -924,6 +1007,7 @@ class CharacterEditor extends MusicBeatState {
                     setCurrentOffsetY(0);
                 }, 170),
                 getButton(265, 32+(22), "Reset Camera", ()-> {
+                    zoomTarget = 0.8;
                     targetCamPos = [0, 0];
                 }, 170)
             ]
@@ -940,6 +1024,8 @@ class CharacterEditor extends MusicBeatState {
             if (FileUtil.directoryExists("mods/" + i + "/data/characters/")) {
                 for (file in FileUtil.readDir("mods/" + i + "/data/characters/")) {
                     if (StringTools.endsWith(file, ".json")) {
+                        var polyMeta = parseJsonFile("mods/" + i + "/_polymod_meta.json");
+                        mods.push(polyMeta.title);
                         var charFile = parseJsonFile("mods/" + i + "/data/characters/" + file);
                         if (charFile != null) {
                             var title = "";
@@ -1276,6 +1362,7 @@ class CharacterEditor extends MusicBeatState {
     }
 
     function updateWindowHitboxIG() {
+        var windowIndex = 0;
         for (obj in windows) {
             if (obj != null) {
                 if (windowManager.topMostWindow == obj) {
@@ -1287,12 +1374,14 @@ class CharacterEditor extends MusicBeatState {
                     if (FlxG.mouse.overlaps(tophitbox) && FlxG.mouse.pressed) {
                         obj.x += FlxG.mouse.deltaX;
                         obj.y += FlxG.mouse.deltaY;
+                        windowTargetY[windowIndex] = obj.y;
                     }
                     if (obj.y < -3 && !FlxG.mouse.pressed) {
                         obj.y = -3;
                     }
                 }
             }
+            windowIndex++;
         }
     }
 
@@ -1325,11 +1414,19 @@ class CharacterEditor extends MusicBeatState {
 
         disableInput = false;
         var windowIndex = 0;
+        for (child in realDropDowns) {
+            if (child.dropDownOpen != null) {
+                if (child.dropDownOpen) {
+                    disableInput = true;
+                    break;
+                }
+            }
+        }
         for (i in windows) {
             if (windowTargetY[windowIndex] == null) {
                 windowTargetY[windowIndex] = i.y;
             } else {
-                i.y = MathUtil.coolLerp(i.y, windowTargetY[windowIndex], 0.2);
+                //i.y = MathUtil.coolLerp(i.y, windowTargetY[windowIndex], 0.2);
             }
             if (i.visible) {
                 if (FlxG.mouse.overlaps(i)) {
@@ -1429,8 +1526,8 @@ class CharacterEditor extends MusicBeatState {
         }
         if (!disableInput) {
             zoomTarget += FlxG.mouse.wheel/10;
-            if (zoomTarget < 0) {
-                zoomTarget = 0;
+            if (zoomTarget < 0.01) {
+                zoomTarget = 0.01;
             }
             camCHAR.zoom = MathUtil.coolLerp(camCHAR.zoom, zoomTarget, 0.1); 
         }
