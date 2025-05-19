@@ -1,6 +1,7 @@
+import FlxG;
 import funkin.modding.module.Module;
-import funkin.modding.base.ScriptedMusicBeatState;
 import funkin.ui.debug.DebugMenuSubState;
+import funkin.modding.base.ScriptedMusicBeatState;
 
 class AnimInjection extends Module
 {
