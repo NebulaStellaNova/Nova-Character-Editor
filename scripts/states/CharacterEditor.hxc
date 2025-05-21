@@ -52,7 +52,7 @@ class CharacterEditor extends MusicBeatState {
 
     var Converters;
 
-    var editorVersion = "v0.1.1";
+    var editorVersion = "v0.1.2";
 
     var windowTitleSuffix = "";
     var windowTitlePrefix = "";
@@ -1352,8 +1352,9 @@ class CharacterEditor extends MusicBeatState {
         var generatedBy = "Nova Character Editor " + editorVersion;
         jsonFile.generatedBy = generatedBy;
         var fileString = Json.stringify(jsonFile, null, "\t");
+        FileUtil.writeStringToPath(path, fileString);
         //if (checkFileExists(path)) {
-            FileUtil.deleteFile(path);
+        FileUtil.deleteFile(path);
         //}
         FileUtil.writeStringToPath(path, fileString);
         unsavedChanges = false;
@@ -1522,12 +1523,12 @@ class CharacterEditor extends MusicBeatState {
                 for (thing in [curChar, onionSkin]) {
                     thing.flipX = false; 
                     if (curCharFile.flipX != null) {
-                        thing.flipX = curCharFile.flipX;
+                        thing.flipX = false;//curCharFile.flipX;
                     }
                     thing.flipY = false; 
                     if (curCharFile.flipY != null) {
                         if (curCharFile.flipY) {
-                            thing.flipY = !thing.flipY;
+                            thing.flipY = false;//!thing.flipY;
                         }
                     }
                     thing.antialiasing = curCharFile.isPixel != null ? !curCharFile.isPixel : true;
