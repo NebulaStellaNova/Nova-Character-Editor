@@ -96,6 +96,7 @@ class CharacterEditor extends MusicBeatState {
     var curCharacter = "";
 
     var currentPath = "";
+    var currentFolder = "??";
     var paths = [];
     
     var windows = [];
@@ -225,11 +226,11 @@ class CharacterEditor extends MusicBeatState {
         FunkinSound.playMusic("chartEditorLoop", {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
         FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
 
-        var currentFolder = "??";
+        //var currentFolder = "??";
         for (mod in PolymodHandler.getAllMods()) {
             var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
             if (meta.title == "Nova Character Editor") {
-                currentFolder = "mods/" + mod.id;
+                currentFolder = mod.id;
                 break;
             }
         }
@@ -1376,7 +1377,7 @@ class CharacterEditor extends MusicBeatState {
 
     function newCharacter() {
         FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
-            writeCharFile(fixPath(path), Json.parse(FileUtil.readStringFromPath("mods/Nova Character Editor/data/config/templateCharacter.json")));
+            writeCharFile(fixPath(path), Json.parse(FileUtil.readStringFromPath("mods/" + currentFolder + "/data/config/templateCharacter.json")));
             FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor'));
         }, null, "template.json");
         
