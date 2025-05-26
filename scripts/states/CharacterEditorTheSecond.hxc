@@ -231,6 +231,7 @@ class CharacterEditorV2 extends MusicBeatState {
             characterInfoWindow.minimizable = false;
             characterInfoWindow.collapsable = false;
             characterInfoWindow.width = 250;
+            characterInfoWindow.height = 500;
             characterInfoWindow.screenCenter();
             characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
             characterInfoWindow.y = topBar.height + 10;
@@ -367,7 +368,7 @@ class CharacterEditorV2 extends MusicBeatState {
             editAnimWindow.minimizable = false;
             editAnimWindow.collapsable = false;
             editAnimWindow.width = 250;
-            editAnimWindow.height = 270;
+            editAnimWindow.height = 280;
             editAnimWindow.screenCenter();
             editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width;
             editAnimWindow.y = topBar.height + 10;
@@ -451,6 +452,7 @@ class CharacterEditorV2 extends MusicBeatState {
             animOffsetsBox.addComponent(animStepperY);
 
             var loopBox = new HBox();
+            loopBox.marginLeft = 75;
             editAnimWindow.addComponent(loopBox);
 
             var loopLabel = new Label();
@@ -463,7 +465,7 @@ class CharacterEditorV2 extends MusicBeatState {
             loopBox.addComponent(loopCheckBox);
 
             var animflipXBox = new HBox();
-            animflipXBox.marginTop = 5;
+            animflipXBox.marginTop = 10;
             animflipXBox.marginLeft = 30;
             editAnimWindow.addComponent(animflipXBox);
 
