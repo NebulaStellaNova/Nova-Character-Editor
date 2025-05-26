@@ -122,7 +122,7 @@ class NovaConverters extends Module {
                 name: i.anim
             };
             if (i.indices != null && i.indices != []) {
-                daAnim.indices = i.indices;
+                daAnim.frameIndices = i.indices;
             }
             baseTemplate.animations.push(daAnim);
         }

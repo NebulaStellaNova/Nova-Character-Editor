@@ -14,7 +14,7 @@ class AnimInjection extends Module
         if (Std.isOfType(event.targetState, DebugMenuSubState)) {
             var debugState:DebugMenuSubState = event.targetState;
             var animEditor = debugState.items.getItem("ANIMATION EDITOR");
-            animEditor.setItem("CHARACTER EDITOR", ()->FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditor')));
+            animEditor.setItem("CHARACTER EDITOR", ()->FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2')));
         }
     }
 }
