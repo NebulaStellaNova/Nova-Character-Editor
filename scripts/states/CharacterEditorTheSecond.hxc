@@ -178,6 +178,8 @@ class CharacterEditorV2 extends MusicBeatState {
 	function create() {
 		super.create();
 		
+		enbaleAutoPause();
+	
 		characterData.push({
 			id: "bf",
 			fileName: "bf.json",
@@ -275,6 +277,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		exitItem.text = 'Exit';
 		exitItem.shortcutText = 'Ctrl + Q';
 		exitItem.onClick = () -> {
+			disableAutoPause();
 			FlxG.switchState(new MainMenuState());
 		}
 		fileMenu.addComponent(exitItem);
@@ -759,6 +762,14 @@ class CharacterEditorV2 extends MusicBeatState {
 	override function stepHit() {
 		super.stepHit();
 		var curStep = get_conductorInUse().currentStep;
+	}
+
+	function enbaleAutoPause() {
+		FlxG.autoPause = false;
+	}
+
+	function disableAutoPause() {
+		FlxG.autoPause = true;
 	}
 
 }
