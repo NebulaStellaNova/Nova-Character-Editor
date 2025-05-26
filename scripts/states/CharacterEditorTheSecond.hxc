@@ -84,7 +84,11 @@ class CharacterEditorV2 extends MusicBeatState {
 	var curCharacterData;
 	var characterSprite;
 
+	var topBar;
+	var characterInfoWindow;
+	
 	var renderType;
+	var singTimeStepper;
 
 	var cameraTarget = {
 		x: 0,
@@ -139,11 +143,16 @@ class CharacterEditorV2 extends MusicBeatState {
 			charName.text = character.name;
 		}
 
+		if (singTimeStepper != null) {
+			singTimeStepper.pos = character.singTime;
+		}
+
 		if (assetPath != null){
 			assetPath.text = StringTools.replace(character.assetPath, "characters/", "");
 		}
 
 		character.renderType = character.renderType != null ? character.renderType : "sparrow";
+		
 		if (renderType != null) {
 			renderType.text = character.renderType;
 		}
@@ -151,6 +160,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		if (characterSprite != null) {
 			remove(characterSprite);
 		}
+		
 		trace(characterData.id);
 		
 		characterSprite = CharacterDataParser.fetchCharacter(characterData.id);
@@ -210,7 +220,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		FlxG.cameras.add(camHUD, false);
 		
 		// -- Top Bar Shit -- \\
-		var topBar = new MenuBar();
+		topBar = new MenuBar();
 		topBar.width = FlxG.width;
 		topBar.cameras = [camHUD];
 		add(topBar);
@@ -297,7 +307,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterInfoWindow.minimizable = false;
 			characterInfoWindow.collapsable = false;
 			characterInfoWindow.width = 250;
-			characterInfoWindow.height = 500;
+			characterInfoWindow.height = 525;
 			characterInfoWindow.screenCenter();
 			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
 			characterInfoWindow.y = topBar.height + 10;
@@ -373,6 +383,11 @@ class CharacterEditorV2 extends MusicBeatState {
 			singTimeLabel.marginTop = 6;
 			singTimeBox.addComponent(singTimeLabel);
 
+			singTimeStepper = new NumberStepper();
+			singTimeStepper.color = 0xFFaaaaaa;
+			singTimeStepper.width = 138;
+			singTimeBox.addComponent(singTimeStepper);
+
 			var charflipXBox = new HBox();
 			charflipXBox.marginTop = -10;
 			charflipXBox.marginLeft = 30;
@@ -397,11 +412,6 @@ class CharacterEditorV2 extends MusicBeatState {
 			charFlipYCheckBox.marginTop = 5;
 			charflipXBox.addComponent(charFlipYCheckBox);
 
-			var singTimeStepper = new NumberStepper();
-			singTimeStepper.color = 0xFFaaaaaa;
-			singTimeStepper.width = 138;
-			singTimeBox.addComponent(singTimeStepper);
-
 			var splitter = new HorizontalSplitter();
 			characterInfoWindow.addComponent(splitter);
 
@@ -418,6 +428,20 @@ class CharacterEditorV2 extends MusicBeatState {
 			animationList.height = 200;
 			animationList.marginTop = 6;
 			characterInfoWindow.addComponent(animationList);
+
+			var editButtonBox = new HBox();
+			characterInfoWindow.addComponent(editButtonBox);
+			
+			var animEditButton = new Button();
+			animEditButton.text = 'Edit Animation';
+			animEditButton.marginTop = 6;
+			animEditButton.width = 215;
+			animEditButton.onClick = ()->{
+				openSound();
+				openAnimEditWindow();
+			}
+			editButtonBox.addComponent(animEditButton);
+
 			
 		}
 		editMenu.addComponent(charPropertiesItem);
@@ -425,9 +449,115 @@ class CharacterEditorV2 extends MusicBeatState {
 		editAnimsItem = new MenuItem();
 		editAnimsItem.text = "Animation Info";
 		editAnimsItem.shortcutText = '';
-		editAnimsItem.onClick = () -> {
-
+		editAnimsItem.onClick = ()->{
 			openSound();
+			openAnimEditWindow();
+		}
+		editMenu.addComponent(editAnimsItem);      
+		
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator); 
+
+		deleteAnimItem = new MenuItem();
+		deleteAnimItem.text = 'Delete Current Animation';
+		deleteAnimItem.shortcutText = '';
+		deleteAnimItem.color = 0xFFFF0000;
+		deleteAnimItem.onClick = () -> {
+
+		}
+		editMenu.addComponent(deleteAnimItem);       
+
+		// -- Tools Dropdown -- \\
+		toolsMenu = new Menu();
+		toolsMenu.text = 'Tools'; 
+		topBar.addComponent(toolsMenu);
+
+		resetCameraItem = new MenuItem();
+		resetCameraItem.text = 'Reset Camera';
+		resetCameraItem.shortcutText = '';
+		resetCameraItem.onClick = () -> {
+
+		}
+		toolsMenu.addComponent(resetCameraItem);
+
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator); 
+
+		clearAnimOffsetsItem = new MenuItem();
+		clearAnimOffsetsItem.text = 'Clear Animation Offsets';
+		clearAnimOffsetsItem.shortcutText = '';
+		clearAnimOffsetsItem.onClick = () -> {
+
+		}
+		toolsMenu.addComponent(clearAnimOffsetsItem);
+
+
+		clearAllOffsetsItem = new MenuItem();
+		clearAllOffsetsItem.text = 'Clear All Animation Offsets';
+		clearAllOffsetsItem.shortcutText = '';
+		clearAllOffsetsItem.color = 0xFFFF0000;
+		clearAllOffsetsItem.onClick = () -> {
+
+		}
+		toolsMenu.addComponent(clearAllOffsetsItem);
+		
+		// -- Converters Dropdown -- \\
+		convertersMenu = new Menu();
+		convertersMenu.text = 'Converters'; 
+		topBar.addComponent(convertersMenu);
+		
+		psychConvertItem = new MenuItem();
+		psychConvertItem.text = 'Psych to V-Slice';
+		psychConvertItem.shortcutText = '';
+		psychConvertItem.onClick = () -> {
+
+		}
+		convertersMenu.addComponent(psychConvertItem);
+		
+		codenameConvertItem = new MenuItem();
+		codenameConvertItem.text = 'Codename to V-Slice';
+		codenameConvertItem.shortcutText = '';
+		codenameConvertItem.onClick = () -> {
+
+		}
+		convertersMenu.addComponent(codenameConvertItem);
+
+		// -- Help Menu! -- \\
+		helpItem = new Menu();
+		helpItem.text = 'Help';
+		helpItem.onClick = () -> {
+
+		}
+		topBar.addComponent(helpItem);
+		
+		userGuideItem = new MenuItem();
+		userGuideItem.text = 'User Guide';
+		userGuideItem.shortcutText = 'F1';
+		userGuideItem.onClick = () -> {
+
+		}
+		helpItem.addComponent(userGuideItem);
+		
+		checkForUpdateItem = new MenuItem();
+		checkForUpdateItem.text = 'Check for Updates';
+		checkForUpdateItem.shortcutText = 'Ctrl + U';
+		checkForUpdateItem.onClick = () -> {
+
+		}
+		helpItem.addComponent(checkForUpdateItem);
+
+		var watermark = new Label();
+		watermark.text = editorTitle + " " + editorVersion;
+		watermark.x = FlxG.width - 282;
+		watermark.y = 11;
+		watermark.cameras = [camHUD];
+		add(watermark);
+
+		loadCharacter(characterData[0]);
+
+	}
+
+	function openAnimEditWindow() {
 
 			editAnimWindow = new Window();
 			editAnimWindow.cameras = [camHUD];
@@ -555,110 +685,6 @@ class CharacterEditorV2 extends MusicBeatState {
 			var animFlipYCheckBox = new CheckBox();
 			animFlipYCheckBox.marginTop = 5;
 			animflipXBox.addComponent(animFlipYCheckBox);
-		}
-		
-		editMenu.addComponent(editAnimsItem);      
-		
-		var separator = new MenuSeparator();
-		fileMenu.addComponent(separator); 
-
-		deleteAnimItem = new MenuItem();
-		deleteAnimItem.text = 'Delete Current Animation';
-		deleteAnimItem.shortcutText = '';
-		deleteAnimItem.color = 0xFFFF0000;
-		deleteAnimItem.onClick = () -> {
-
-		}
-		editMenu.addComponent(deleteAnimItem);       
-
-		// -- Tools Dropdown -- \\
-		toolsMenu = new Menu();
-		toolsMenu.text = 'Tools'; 
-		topBar.addComponent(toolsMenu);
-
-		resetCameraItem = new MenuItem();
-		resetCameraItem.text = 'Reset Camera';
-		resetCameraItem.shortcutText = '';
-		resetCameraItem.onClick = () -> {
-
-		}
-		toolsMenu.addComponent(resetCameraItem);
-
-		var separator = new MenuSeparator();
-		fileMenu.addComponent(separator); 
-
-		clearAnimOffsetsItem = new MenuItem();
-		clearAnimOffsetsItem.text = 'Clear Animation Offsets';
-		clearAnimOffsetsItem.shortcutText = '';
-		clearAnimOffsetsItem.onClick = () -> {
-
-		}
-		toolsMenu.addComponent(clearAnimOffsetsItem);
-
-
-		clearAllOffsetsItem = new MenuItem();
-		clearAllOffsetsItem.text = 'Clear All Animation Offsets';
-		clearAllOffsetsItem.shortcutText = '';
-		clearAllOffsetsItem.color = 0xFFFF0000;
-		clearAllOffsetsItem.onClick = () -> {
-
-		}
-		toolsMenu.addComponent(clearAllOffsetsItem);
-		
-		// -- Converters Dropdown -- \\
-		convertersMenu = new Menu();
-		convertersMenu.text = 'Converters'; 
-		topBar.addComponent(convertersMenu);
-		
-		psychConvertItem = new MenuItem();
-		psychConvertItem.text = 'Psych to V-Slice';
-		psychConvertItem.shortcutText = '';
-		psychConvertItem.onClick = () -> {
-
-		}
-		convertersMenu.addComponent(psychConvertItem);
-		
-		codenameConvertItem = new MenuItem();
-		codenameConvertItem.text = 'Codename to V-Slice';
-		codenameConvertItem.shortcutText = '';
-		codenameConvertItem.onClick = () -> {
-
-		}
-		convertersMenu.addComponent(codenameConvertItem);
-
-		// -- Help Menu! -- \\
-		helpItem = new Menu();
-		helpItem.text = 'Help';
-		helpItem.onClick = () -> {
-
-		}
-		topBar.addComponent(helpItem);
-		
-		userGuideItem = new MenuItem();
-		userGuideItem.text = 'User Guide';
-		userGuideItem.shortcutText = 'F1';
-		userGuideItem.onClick = () -> {
-
-		}
-		helpItem.addComponent(userGuideItem);
-		
-		checkForUpdateItem = new MenuItem();
-		checkForUpdateItem.text = 'Check for Updates';
-		checkForUpdateItem.shortcutText = 'Ctrl + U';
-		checkForUpdateItem.onClick = () -> {
-
-		}
-		helpItem.addComponent(checkForUpdateItem);
-
-		var watermark = new Label();
-		watermark.text = editorTitle + " " + editorVersion;
-		watermark.x = FlxG.width - 282;
-		watermark.y = 11;
-		watermark.cameras = [camHUD];
-		add(watermark);
-
-		loadCharacter(characterData[0]);
-
 	}
 
 	function openSound() {
