@@ -1,6 +1,13 @@
+import flixel.FlxG;
+import flixel.FlxCamera;
+
+import funkin.input.Cursor;
+
 import funkin.ui.MusicBeatState;
 
 import haxe.ui.RuntimeComponentBuilder;
+
+import funkin.ui.debug.charting.ChartEditorState;
 
 import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
@@ -47,6 +54,194 @@ class CharacterEditorV2 extends MusicBeatState {
 
     function create() {
         super.create();
+        
+        Cursor.show();
+        var chartEditor = new ChartEditorState();
+        
+        camHUD = new FlxCamera();
+        camHUD.bgColor = 0x00000000;
+        FlxG.cameras.add(camHUD, false);
+        
+        // -- Top Bar Shit -- \\
+        var topBar = new MenuBar();
+        topBar.width = FlxG.width;
+        topBar.cameras = [camHUD];
+        add(topBar);
+
+        // -- File Dropdown -- \\
+        fileMenu = new Menu();
+        fileMenu.text = 'File'; 
+        topBar.addComponent(fileMenu);
+
+        newItem = new MenuItem();
+        newItem.text = 'New';
+        newItem.shortcutText = 'Ctrl + N';
+        newItem.onClick = () -> {
+
+        }
+        fileMenu.addComponent(newItem);
+
+        var separator = new MenuSeparator();
+        fileMenu.addComponent(separator);
+
+        openItem = new MenuItem();
+        openItem.text = 'Open';
+        openItem.shortcutText = 'Ctrl + O';
+        openItem.onClick = () -> {
+
+        }
+        fileMenu.addComponent(openItem);
+        
+        var separator = new MenuSeparator();
+        fileMenu.addComponent(separator);
+
+        saveItem = new MenuItem();
+        saveItem.text = 'Save';
+        saveItem.shortcutText = 'Ctrl + S';
+        saveItem.onClick = () -> {
+
+        }
+        fileMenu.addComponent(saveItem);
+        
+        saveAsItem = new MenuItem();
+        saveAsItem.text = 'Save As';
+        saveAsItem.shortcutText = 'Ctrl + Shift + S';
+        saveAsItem.onClick = () -> {
+
+        }
+        fileMenu.addComponent(saveAsItem);
+        
+        var separator = new MenuSeparator();
+        fileMenu.addComponent(separator);
+
+        exitItem = new MenuItem();
+        exitItem.text = 'Exit';
+        exitItem.shortcutText = 'Ctrl + Q';
+        exitItem.onClick = () -> {
+
+        }
+        fileMenu.addComponent(exitItem);
+
+        // -- New Dropdown -- \\
+        editMenu = new Menu();
+        editMenu.text = 'Edit'; 
+        topBar.addComponent(editMenu);
+
+        iconPropertiesItem = new MenuItem();
+        iconPropertiesItem.text = 'Icon Info';
+        iconPropertiesItem.shortcutText = '';
+        iconPropertiesItem.onClick = () -> {
+
+        }
+        editMenu.addComponent(iconPropertiesItem);
+
+        charPropertiesItem = new MenuItem();
+        charPropertiesItem.text = 'Character Info';
+        charPropertiesItem.shortcutText = '';
+        charPropertiesItem.onClick = () -> {
+
+        }
+        editMenu.addComponent(charPropertiesItem);
+
+        editAnimsItem = new MenuItem();
+        editAnimsItem.text = 'Animation Info';
+        editAnimsItem.shortcutText = '';
+        editAnimsItem.onClick = () -> {
+
+        }
+        editMenu.addComponent(editAnimsItem);      
+        
+        var separator = new MenuSeparator();
+        fileMenu.addComponent(separator); 
+
+        deleteAnimItem = new MenuItem();
+        deleteAnimItem.text = 'Delete Current Animation';
+        deleteAnimItem.shortcutText = '';
+        deleteAnimItem.color = 0xFFFF0000;
+        deleteAnimItem.onClick = () -> {
+
+        }
+        editMenu.addComponent(deleteAnimItem);       
+
+        // -- Tools Dropdown -- \\
+        toolsMenu = new Menu();
+        toolsMenu.text = 'Tools'; 
+        topBar.addComponent(toolsMenu);
+
+        resetCameraItem = new MenuItem();
+        resetCameraItem.text = 'Reset Camera';
+        resetCameraItem.shortcutText = '';
+        resetCameraItem.onClick = () -> {
+
+        }
+        toolsMenu.addComponent(resetCameraItem);
+
+        var separator = new MenuSeparator();
+        fileMenu.addComponent(separator); 
+
+        clearAnimOffsetsItem = new MenuItem();
+        clearAnimOffsetsItem.text = 'Clear Animation Offsets';
+        clearAnimOffsetsItem.shortcutText = '';
+        clearAnimOffsetsItem.onClick = () -> {
+
+        }
+        toolsMenu.addComponent(clearAnimOffsetsItem);
+
+
+        clearAllOffsetsItem = new MenuItem();
+        clearAllOffsetsItem.text = 'Clear All Animation Offsets';
+        clearAllOffsetsItem.shortcutText = '';
+        clearAllOffsetsItem.color = 0xFFFF0000;
+        clearAllOffsetsItem.onClick = () -> {
+
+        }
+        toolsMenu.addComponent(clearAllOffsetsItem);
+        
+        // -- Converters Dropdown -- \\
+        convertersMenu = new Menu();
+        convertersMenu.text = 'Converters'; 
+        topBar.addComponent(convertersMenu);
+        
+        psychConvertItem = new MenuItem();
+        psychConvertItem.text = 'Psych to V-Slice';
+        psychConvertItem.shortcutText = '';
+        psychConvertItem.onClick = () -> {
+
+        }
+        convertersMenu.addComponent(psychConvertItem);
+        
+        codenameConvertItem = new MenuItem();
+        codenameConvertItem.text = 'Codename to V-Slice';
+        codenameConvertItem.shortcutText = '';
+        codenameConvertItem.onClick = () -> {
+
+        }
+        convertersMenu.addComponent(codenameConvertItem);
+
+        // -- Help Menu! -- \\
+        helpItem = new Menu();
+        helpItem.text = 'Help';
+        helpItem.onClick = () -> {
+
+        }
+        topBar.addComponent(helpItem);
+        
+        userGuideItem = new MenuItem();
+        userGuideItem.text = 'User Guide';
+        userGuideItem.shortcutText = 'F1';
+        userGuideItem.onClick = () -> {
+
+        }
+        helpItem.addComponent(userGuideItem);
+        
+        checkForUpdateItem = new MenuItem();
+        checkForUpdateItem.text = 'Check for Updates';
+        checkForUpdateItem.shortcutText = 'Ctrl + U';
+        checkForUpdateItem.onClick = () -> {
+
+        }
+        helpItem.addComponent(checkForUpdateItem);
+
     }
 
     function update() {
