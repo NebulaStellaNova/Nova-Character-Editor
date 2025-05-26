@@ -5,15 +5,26 @@ import flixel.FlxCamera;
 
 import funkin.audio.FunkinSound;
 
+import funkin.play.character.SparrowCharacter;
+import funkin.play.character.MultiSparrowCharacter;
+
 import funkin.input.Cursor;
 
 import funkin.util.FileUtil;
 
 import funkin.ui.MusicBeatState;
 
-import haxe.ui.RuntimeComponentBuilder;
+import funkin.ui.mainmenu.MainMenuState;
+
+import funkin.util.MathUtil;
 
 import funkin.ui.debug.charting.ChartEditorState;
+
+import funkin.play.character.CharacterDataParser;
+
+import funkin.graphics.FunkinSprite;
+
+import haxe.ui.RuntimeComponentBuilder;
 
 import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
@@ -55,550 +66,630 @@ import haxe.ui.macros.ComponentMacros;
 
 class CharacterEditorV2 extends MusicBeatState {
 
-    var windowManager = new WindowManager();
-    
-    var characterData = [];
-    var curCharacterData;
+	// -- Editor Info -- \\
+	var editorVersion = "v0.0.1";
+	var editorTitle = "Nova Character Editor REFRESHED";
+	// ----------------- \\
 
-    var renderType;
 
-    function new() {
-        super('CharacterEditorV2');
-    }
+	var bg:FunkinSprite;
 
-    /**
-     * Shortcut to parse a JSON string
-     * @param str JSON contents as string.
-     * @return Parsed JSON
-    */
-    public function parseJsonString(str:String) {
-        return Json.parse(str);
-    }
+	var windowManager = new WindowManager();
+	
+	var characterData = [];
+	var curCharacterData;
+	var characterSprite;
 
-    /**
-     * Shortcut to parse a JSON file
-     * @param path  Path to the JSON file
-     * @return Parsed JSON
-    */
-    public function parseJsonFile(path:String) {
-        var daString = FileUtil.readStringFromPath(path);
-        if (daString == null || daString == "") {
-            return null;
-        } else {
-            return parseJsonString(daString);
+	var renderType;
+
+	var cameraTarget = {
+		x: 0,
+		y: 0,
+		zoom: 1
+	}
+
+	function new() {
+		super('CharacterEditorV2');
+	}
+
+	/**
+	 * Shortcut to parse a JSON string
+	 * @param str JSON contents as string.
+	 * @return Parsed JSON
+	*/
+	public function parseJsonString(str:String) {
+		return Json.parse(str);
+	}
+
+	/**
+	 * Shortcut to parse a JSON file
+	 * @param path  Path to the JSON file
+	 * @return Parsed JSON
+	*/
+	public function parseJsonFile(path:String) {
+		var daString = FileUtil.readStringFromPath(path);
+		if (daString == null || daString == "") {
+			return null;
+		} else {
+			return parseJsonString(daString);
+		}
+	}
+	
+	function loadCharacter(characterData) {
+		curCharacterData = characterData;
+		var character = characterData.character;
+		if (charName != null){
+			charName.text = character.name;
+		}
+
+		if (assetPath != null){
+			assetPath.text = StringTools.replace(character.assetPath, "characters/", "");
+		}
+
+		character.renderType = character.renderType != null ? character.renderType : "sparrow";
+		renderType.text = character.renderType;
+
+		if (characterSprite != null) {
+			remove(characterSprite);
+		}
+		trace(characterData.id);
+		
+		characterSprite = CharacterDataParser.fetchCharacter(characterData.id);
+		characterSprite.updateHitbox();
+		characterSprite.screenCenter();
+		characterSprite.playAnimation("idle");
+		add(characterSprite);
+	}
+
+	function checkFileExists(path:String) {
+		return Assets.exists(path);
+	}
+
+	function create() {
+		super.create();
+		
+		characterData.push({
+			id: "bf",
+			fileName: "bf.json",
+			path: "assets",
+			character: parseJsonFile("assets/data/characters/bf.json"),
+			polyMeta: null
+		});
+		for (i in FileUtil.readDir("mods")) {
+			if (FileUtil.directoryExists("mods/" + i + "/data/characters/")) {
+				for (file in FileUtil.readDir("mods/" + i + "/data/characters/")) {
+					if (StringTools.endsWith(file, ".json")) {
+						var polyMeta = parseJsonFile("mods/" + i + "/_polymod_meta.json");
+						//mods.push(polyMeta.title);
+						var charFile = parseJsonFile("mods/" + i + "/data/characters/" + file);
+						characterData.push({
+							id: StringTools.replace(file, ".json", ""),
+							fileName: file,
+							path: "mods/" + i + "/",
+							character: charFile,
+							polyMeta: polyMeta
+						});
+					}
+					
+				}
+			}
+		}
+
+		bg = new FunkinSprite(0, 0).loadGraphic(Paths.image('menuDesat'));
+		bg.scrollFactor.set(0, 0);
+		bg.setGraphicSize(Std.int(bg.width * 1.2));
+		bg.updateHitbox();
+		bg.screenCenter();
+		add(bg);
+
+		characterSprite = new MultiSparrowCharacter("bf");
+		characterSprite.onCreate();
+		characterSprite.screenCenter();
+		add(characterSprite);
+
+		Cursor.show();
+		var chartEditor = new ChartEditorState();
+		
+		camHUD = new FlxCamera();
+		camHUD.bgColor = 0x00000000;
+		FlxG.cameras.add(camHUD, false);
+		
+		// -- Top Bar Shit -- \\
+		var topBar = new MenuBar();
+		topBar.width = FlxG.width;
+		topBar.cameras = [camHUD];
+		add(topBar);
+
+		// -- File Dropdown -- \\
+		fileMenu = new Menu();
+		fileMenu.text = 'File'; 
+		topBar.addComponent(fileMenu);
+
+		newItem = new MenuItem();
+		newItem.text = 'New';
+		newItem.shortcutText = 'Ctrl + N';
+		newItem.onClick = () -> {
+
+		}
+		fileMenu.addComponent(newItem);
+
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator);
+
+		openItem = new MenuItem();
+		openItem.text = 'Open';
+		openItem.shortcutText = 'Ctrl + O';
+		openItem.onClick = () -> {
+
+		}
+		fileMenu.addComponent(openItem);
+		
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator);
+
+		saveItem = new MenuItem();
+		saveItem.text = 'Save';
+		saveItem.shortcutText = 'Ctrl + S';
+		saveItem.onClick = () -> {
+
+		}
+		fileMenu.addComponent(saveItem);
+		
+		saveAsItem = new MenuItem();
+		saveAsItem.text = 'Save As';
+		saveAsItem.shortcutText = 'Ctrl + Shift + S';
+		saveAsItem.onClick = () -> {
+
+		}
+		fileMenu.addComponent(saveAsItem);
+		
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator);
+
+		exitItem = new MenuItem();
+		exitItem.text = 'Exit';
+		exitItem.shortcutText = 'Ctrl + Q';
+		exitItem.onClick = () -> {
+			FlxG.switchState(new MainMenuState());
+		}
+		fileMenu.addComponent(exitItem);
+
+		// -- Edit Dropdown -- \\
+		editMenu = new Menu();
+		editMenu.text = 'Edit'; 
+		topBar.addComponent(editMenu);
+
+		iconPropertiesItem = new MenuItem();
+		iconPropertiesItem.text = 'Icon Info';
+		iconPropertiesItem.shortcutText = '';
+		iconPropertiesItem.onClick = () -> {
+
+		}
+		editMenu.addComponent(iconPropertiesItem);
+
+		charPropertiesItem = new MenuItem();
+		charPropertiesItem.text = 'Character Info';
+		charPropertiesItem.shortcutText = '';
+		charPropertiesItem.onClick = () -> {
+
+			openSound();
+
+			characterInfoWindow = new Window();
+			characterInfoWindow.cameras = [camHUD];
+			characterInfoWindow.windowManager = windowManager;
+			characterInfoWindow.title = "Character Info";
+			characterInfoWindow.maximizable = false;
+			characterInfoWindow.minimizable = false;
+			characterInfoWindow.collapsable = false;
+			characterInfoWindow.width = 250;
+			characterInfoWindow.height = 500;
+			characterInfoWindow.screenCenter();
+			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
+			characterInfoWindow.y = topBar.height + 10;
+			add(characterInfoWindow);
+
+			characterList = new DropDown();
+			characterList.text = "Pick Character";
+			characterList.searchable = true;
+			characterList.width = 215;
+			for (i in characterData) {
+				characterList.dataSource.add({text: i.character.name});
+			}
+			characterList.onChange = ()->{
+				for (i in characterData) {
+					if (i.character.name == characterList.text) {
+						loadCharacter(i);
+						characterList.text = "Editing: " + i.character.name;
+						break;
+					}
+				}
+			}
+			characterInfoWindow.addComponent(characterList);
+
+			var nameBox = new HBox();
+			characterInfoWindow.addComponent(nameBox);
+
+			characterNameLabel = new Label();
+			characterNameLabel.text = 'Name:';
+			characterNameLabel.marginTop = 6;
+			nameBox.addComponent(characterNameLabel);
+
+			charName = new TextField();
+			charName.placeholder = 'Character';
+			charName.color = 0xFFaaaaaa;
+			charName.width = 172;
+			nameBox.addComponent(charName);
+
+			var assetPathBoxBox = new HBox();
+			characterInfoWindow.addComponent(assetPathBoxBox);
+
+			var assetPathLabel = new Label();
+			assetPathLabel.text = 'Asset Path:';
+			assetPathLabel.marginTop = 6;
+			assetPathBoxBox.addComponent(assetPathLabel);
+
+			assetPath = new TextField();
+			assetPath.placeholder = '';
+			// assetPath.marginTop = 6;
+			assetPath.color = 0xFFaaaaaa;
+			assetPath.width = 130;
+			assetPathBoxBox.addComponent(assetPath);
+
+			var renderTypeBox = new HBox();
+			characterInfoWindow.addComponent(renderTypeBox);
+
+			var renderTypeLabel = new Label();
+			renderTypeLabel.text = 'Render Type:';
+			renderTypeLabel.marginTop = 6;
+			renderTypeBox.addComponent(renderTypeLabel);
+
+			renderType = new TextField();
+			renderType.placeholder = 'sparrow';
+			// assetPath.marginTop = 6;
+			renderType.color = 0xFFaaaaaa;
+			renderType.width = 123;
+			renderTypeBox.addComponent(renderType);
+
+			var singTimeBox = new HBox();
+			characterInfoWindow.addComponent(singTimeBox);
+
+			var singTimeLabel = new Label();
+			singTimeLabel.text = 'Sing Time:';
+			singTimeLabel.marginTop = 6;
+			singTimeBox.addComponent(singTimeLabel);
+
+			var charflipXBox = new HBox();
+			charflipXBox.marginTop = -10;
+			charflipXBox.marginLeft = 30;
+			characterInfoWindow.addComponent(charflipXBox);
+
+			var charFlipX = new Label();
+			charFlipX.text = 'Flip X:';
+			charFlipX.marginTop = 6;
+			charflipXBox.addComponent(charFlipX);
+
+			var charFlipXCheckBox = new CheckBox();
+			charFlipXCheckBox.marginTop = 5;
+			charflipXBox.addComponent(charFlipXCheckBox);
+			characterInfoWindow.addComponent(charflipXBox);
+
+			var charFlipY = new Label();
+			charFlipY.text = 'Flip Y:';
+			charFlipY.marginTop = 6;
+			charflipXBox.addComponent(charFlipY);
+
+			var charFlipYCheckBox = new CheckBox();
+			charFlipYCheckBox.marginTop = 5;
+			charflipXBox.addComponent(charFlipYCheckBox);
+
+			var singTimeStepper = new NumberStepper();
+			singTimeStepper.color = 0xFFaaaaaa;
+			singTimeStepper.width = 138;
+			singTimeBox.addComponent(singTimeStepper);
+
+			var splitter = new HorizontalSplitter();
+			characterInfoWindow.addComponent(splitter);
+
+			var animLabel = new Label();
+			animLabel.text = 'Animations';
+			animLabel.marginTop = 8;
+			characterInfoWindow.addComponent(animLabel);
+
+			animationList = new ListView();
+			animationList.width = 215;
+			animationList.height = 200;
+			animationList.marginTop = 6;
+			characterInfoWindow.addComponent(animationList);
+			
+		}
+		editMenu.addComponent(charPropertiesItem);
+
+		editAnimsItem = new MenuItem();
+		editAnimsItem.text = "Animation Info";
+		editAnimsItem.shortcutText = '';
+		editAnimsItem.onClick = () -> {
+
+			openSound();
+
+			editAnimWindow = new Window();
+			editAnimWindow.cameras = [camHUD];
+			editAnimWindow.windowManager = windowManager;
+			editAnimWindow.title = "Animation Info";
+			editAnimWindow.maximizable = false;
+			editAnimWindow.minimizable = false;
+			editAnimWindow.collapsable = false;
+			editAnimWindow.width = 250;
+			editAnimWindow.height = 280;
+			editAnimWindow.screenCenter();
+			editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width;
+			editAnimWindow.y = topBar.height + 10;
+			add(editAnimWindow);
+
+			animNameBox = new HBox();
+			editAnimWindow.addComponent(animNameBox);
+
+			var ainmNameLabel = new Label();
+			ainmNameLabel.text = 'Name:';
+			ainmNameLabel.marginTop = 6;
+			animNameBox.addComponent(ainmNameLabel);
+
+			var animName = new TextField();
+			animName.placeholder = "Animation Name";
+			animName.width =  175;
+			animName.color = 0xFFaaaaaa;
+			animNameBox.addComponent(animName);
+
+			prefixBox = new HBox();
+			editAnimWindow.addComponent(prefixBox);
+
+			var prefixLabel = new Label();
+			prefixLabel.text = 'Prefix:';
+			prefixLabel.marginTop = 6;
+			prefixBox.addComponent(prefixLabel);
+
+			var prefix = new TextField();
+			prefix.placeholder = "None";
+			prefix.width =  161;
+			prefix.color = 0xFFaaaaaa;
+			prefixBox.addComponent(prefix);
+			
+			indicesBox = new HBox();
+			editAnimWindow.addComponent(indicesBox);
+
+			var indicesLabel = new Label();
+			indicesLabel.text = 'Indices:';
+			indicesLabel.marginTop = 6;
+			indicesBox.addComponent(indicesLabel);
+
+			var indices = new TextField();
+			indices.placeholder = "None";
+			indices.width =  154;
+			indices.color = 0xFFaaaaaa;
+			indicesBox.addComponent(indices);
+
+			animOffsetsBox = new HBox();
+			editAnimWindow.addComponent(animOffsetsBox);
+
+			var aninOffsetLabel = new Label();
+			aninOffsetLabel.text = 'Offsets:';
+			aninOffsetLabel.marginTop = 6;
+			animOffsetsBox.addComponent(aninOffsetLabel);
+
+			var animAssetPathBoxBox = new HBox();
+			editAnimWindow.addComponent(animAssetPathBoxBox);
+
+			var animAssetPathLabel = new Label();
+			animAssetPathLabel.text = 'Asset Path:';
+			animAssetPathLabel.marginTop = 6;
+			animAssetPathBoxBox.addComponent(animAssetPathLabel);
+
+			animAssetPath = new TextField();
+			animAssetPath.placeholder = 'None';
+			// assetPath.marginTop = 6;
+			animAssetPath.color = 0xFFaaaaaa;
+			animAssetPath.width = 135;
+			animAssetPathBoxBox.addComponent(animAssetPath);
+
+			var animStepperX = new NumberStepper();
+			animStepperX.color = 0xFFaaaaaa;
+			animStepperX.width = 65;
+			animStepperX.marginLeft = 20;
+			animOffsetsBox.addComponent(animStepperX);
+
+			var animStepperY = new NumberStepper();
+			animStepperY.color = 0xFFaaaaaa;
+			animStepperY.marginLeft = 20;
+			animStepperY.width = 65;
+			animOffsetsBox.addComponent(animStepperY);
+
+			var loopBox = new HBox();
+			loopBox.marginLeft = 75;
+			editAnimWindow.addComponent(loopBox);
+
+			var loopLabel = new Label();
+			loopLabel.text = 'Looped:';
+			loopLabel.marginTop = 6;
+			loopBox.addComponent(loopLabel);
+
+			var loopCheckBox = new CheckBox();
+			loopCheckBox.marginTop = 6;
+			loopBox.addComponent(loopCheckBox);
+
+			var animflipXBox = new HBox();
+			animflipXBox.marginTop = 10;
+			animflipXBox.marginLeft = 30;
+			editAnimWindow.addComponent(animflipXBox);
+
+			var animFlipX = new Label();
+			animFlipX.text = 'Flip X:';
+			animFlipX.marginTop = 6;
+			animflipXBox.addComponent(animFlipX);
+
+			var animFlipXCheckBox = new CheckBox();
+			animFlipXCheckBox.marginTop = 5;
+			animflipXBox.addComponent(animFlipXCheckBox);
+
+			var animFlipY = new Label();
+			animFlipY.text = 'Flip Y:';
+			animFlipY.marginTop = 6;
+			animflipXBox.addComponent(animFlipY);
+
+			var animFlipYCheckBox = new CheckBox();
+			animFlipYCheckBox.marginTop = 5;
+			animflipXBox.addComponent(animFlipYCheckBox);
+		}
+		
+		editMenu.addComponent(editAnimsItem);      
+		
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator); 
+
+		deleteAnimItem = new MenuItem();
+		deleteAnimItem.text = 'Delete Current Animation';
+		deleteAnimItem.shortcutText = '';
+		deleteAnimItem.color = 0xFFFF0000;
+		deleteAnimItem.onClick = () -> {
+
+		}
+		editMenu.addComponent(deleteAnimItem);       
+
+		// -- Tools Dropdown -- \\
+		toolsMenu = new Menu();
+		toolsMenu.text = 'Tools'; 
+		topBar.addComponent(toolsMenu);
+
+		resetCameraItem = new MenuItem();
+		resetCameraItem.text = 'Reset Camera';
+		resetCameraItem.shortcutText = '';
+		resetCameraItem.onClick = () -> {
+
+		}
+		toolsMenu.addComponent(resetCameraItem);
+
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator); 
+
+		clearAnimOffsetsItem = new MenuItem();
+		clearAnimOffsetsItem.text = 'Clear Animation Offsets';
+		clearAnimOffsetsItem.shortcutText = '';
+		clearAnimOffsetsItem.onClick = () -> {
+
+		}
+		toolsMenu.addComponent(clearAnimOffsetsItem);
+
+
+		clearAllOffsetsItem = new MenuItem();
+		clearAllOffsetsItem.text = 'Clear All Animation Offsets';
+		clearAllOffsetsItem.shortcutText = '';
+		clearAllOffsetsItem.color = 0xFFFF0000;
+		clearAllOffsetsItem.onClick = () -> {
+
+		}
+		toolsMenu.addComponent(clearAllOffsetsItem);
+		
+		// -- Converters Dropdown -- \\
+		convertersMenu = new Menu();
+		convertersMenu.text = 'Converters'; 
+		topBar.addComponent(convertersMenu);
+		
+		psychConvertItem = new MenuItem();
+		psychConvertItem.text = 'Psych to V-Slice';
+		psychConvertItem.shortcutText = '';
+		psychConvertItem.onClick = () -> {
+
+		}
+		convertersMenu.addComponent(psychConvertItem);
+		
+		codenameConvertItem = new MenuItem();
+		codenameConvertItem.text = 'Codename to V-Slice';
+		codenameConvertItem.shortcutText = '';
+		codenameConvertItem.onClick = () -> {
+
+		}
+		convertersMenu.addComponent(codenameConvertItem);
+
+		// -- Help Menu! -- \\
+		helpItem = new Menu();
+		helpItem.text = 'Help';
+		helpItem.onClick = () -> {
+
+		}
+		topBar.addComponent(helpItem);
+		
+		userGuideItem = new MenuItem();
+		userGuideItem.text = 'User Guide';
+		userGuideItem.shortcutText = 'F1';
+		userGuideItem.onClick = () -> {
+
+		}
+		helpItem.addComponent(userGuideItem);
+		
+		checkForUpdateItem = new MenuItem();
+		checkForUpdateItem.text = 'Check for Updates';
+		checkForUpdateItem.shortcutText = 'Ctrl + U';
+		checkForUpdateItem.onClick = () -> {
+
+		}
+		helpItem.addComponent(checkForUpdateItem);
+
+		var watermark = new Label();
+		watermark.text = editorTitle + " " + editorVersion;
+		watermark.x = FlxG.width - 282;
+		watermark.y = 11;
+		watermark.cameras = [camHUD];
+		add(watermark);
+
+	}
+
+	function openSound() {
+		FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+	}
+
+	function update(event) {
+		super.update(event);
+		get_conductorInUse().update();
+
+		if (FlxG.keys.justPressed.SPACE) {
+            characterSprite.playAnimation(characterSprite.animation.name, true);
         }
-    }
-    
-    function loadCharacter(characterData) {
-        curCharacterData = characterData;
-        var character = characterData.character;
-        if (charName != null){
-            charName.text = character.name;
-        }
 
-        if (assetPath != null){
-            assetPath.text = character.assetPath;
-        }
-
-        /* if (singTimeStepper != null){
-            singTimeStepper.pos = character.singTime;
-        } */
-
-        if (renderType != null){
-            renderType.text = character.renderType;
-        }
-    }
-
-    function checkFileExists(path:String) {
-        return Assets.exists(path);
-    }
-
-    function create() {
-        super.create();
-        
-        for (i in FileUtil.readDir("mods")) {
-            if (FileUtil.directoryExists("mods/" + i + "/data/characters/")) {
-                for (file in FileUtil.readDir("mods/" + i + "/data/characters/")) {
-                    if (StringTools.endsWith(file, ".json")) {
-                        var polyMeta = parseJsonFile("mods/" + i + "/_polymod_meta.json");
-                        //mods.push(polyMeta.title);
-                        var charFile = parseJsonFile("mods/" + i + "/data/characters/" + file);
-                        characterData.push({
-                            id: StringTools.replace(file, ".json", ""),
-                            fileName: file,
-                            path: "mods/" + i + "/",
-                            character: charFile,
-                            polyMeta: polyMeta
-                        });
-                    }
-                    
-                }
-            }
-        }
-
-        Cursor.show();
-        var chartEditor = new ChartEditorState();
-        
-        camHUD = new FlxCamera();
-        camHUD.bgColor = 0x00000000;
-        FlxG.cameras.add(camHUD, false);
-        
-        // -- Top Bar Shit -- \\
-        var topBar = new MenuBar();
-        topBar.width = FlxG.width;
-        topBar.cameras = [camHUD];
-        add(topBar);
-
-        // -- File Dropdown -- \\
-        fileMenu = new Menu();
-        fileMenu.text = 'File'; 
-        topBar.addComponent(fileMenu);
-
-        newItem = new MenuItem();
-        newItem.text = 'New';
-        newItem.shortcutText = 'Ctrl + N';
-        newItem.onClick = () -> {
-
-        }
-        fileMenu.addComponent(newItem);
-
-        var separator = new MenuSeparator();
-        fileMenu.addComponent(separator);
-
-        openItem = new MenuItem();
-        openItem.text = 'Open';
-        openItem.shortcutText = 'Ctrl + O';
-        openItem.onClick = () -> {
-
-        }
-        fileMenu.addComponent(openItem);
-        
-        var separator = new MenuSeparator();
-        fileMenu.addComponent(separator);
-
-        saveItem = new MenuItem();
-        saveItem.text = 'Save';
-        saveItem.shortcutText = 'Ctrl + S';
-        saveItem.onClick = () -> {
-
-        }
-        fileMenu.addComponent(saveItem);
-        
-        saveAsItem = new MenuItem();
-        saveAsItem.text = 'Save As';
-        saveAsItem.shortcutText = 'Ctrl + Shift + S';
-        saveAsItem.onClick = () -> {
-
-        }
-        fileMenu.addComponent(saveAsItem);
-        
-        var separator = new MenuSeparator();
-        fileMenu.addComponent(separator);
-
-        exitItem = new MenuItem();
-        exitItem.text = 'Exit';
-        exitItem.shortcutText = 'Ctrl + Q';
-        exitItem.onClick = () -> {
-
-        }
-        fileMenu.addComponent(exitItem);
-
-        // -- Edit Dropdown -- \\
-        editMenu = new Menu();
-        editMenu.text = 'Edit'; 
-        topBar.addComponent(editMenu);
-
-        iconPropertiesItem = new MenuItem();
-        iconPropertiesItem.text = 'Icon Info';
-        iconPropertiesItem.shortcutText = '';
-        iconPropertiesItem.onClick = () -> {
-
-        }
-        editMenu.addComponent(iconPropertiesItem);
-
-        charPropertiesItem = new MenuItem();
-        charPropertiesItem.text = 'Character Info';
-        charPropertiesItem.shortcutText = '';
-        charPropertiesItem.onClick = () -> {
-
-            openSound();
-
-            characterInfoWindow = new Window();
-            characterInfoWindow.cameras = [camHUD];
-            characterInfoWindow.windowManager = windowManager;
-            characterInfoWindow.title = "Character Info";
-            characterInfoWindow.maximizable = false;
-            characterInfoWindow.minimizable = false;
-            characterInfoWindow.collapsable = false;
-            characterInfoWindow.width = 250;
-            characterInfoWindow.height = 500;
-            characterInfoWindow.screenCenter();
-            characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
-            characterInfoWindow.y = topBar.height + 10;
-            add(characterInfoWindow);
-
-            characterList = new DropDown();
-            characterList.text = "Pick Character";
-            characterList.searchable = true;
-            characterList.width = 215;
-            for (i in characterData) {
-                characterList.dataSource.add({text: i.character.name});
-            }
-            characterList.onChange = ()->{
-                for (i in characterData) {
-                    if (i.character.name == characterList.text) {
-                        loadCharacter(i);
-                        characterList.text = "Editing: " + i.character.name;
-                        break;
-                    }
-                }
-            }
-            characterInfoWindow.addComponent(characterList);
-
-            var nameBox = new HBox();
-            characterInfoWindow.addComponent(nameBox);
-
-            characterNameLabel = new Label();
-            characterNameLabel.text = 'Name:';
-            characterNameLabel.marginTop = 6;
-            nameBox.addComponent(characterNameLabel);
-
-            charName = new TextField();
-            charName.placeholder = 'Boyfriend';
-            charName.color = 0xFFaaaaaa;
-            charName.width = 172;
-            nameBox.addComponent(charName);
-
-            var assetPathBoxBox = new HBox();
-            characterInfoWindow.addComponent(assetPathBoxBox);
-
-            var assetPathLabel = new Label();
-            assetPathLabel.text = 'Asset Path:';
-            assetPathLabel.marginTop = 6;
-            assetPathBoxBox.addComponent(assetPathLabel);
-
-            assetPath = new TextField();
-            assetPath.placeholder = 'characters/';
-            // assetPath.marginTop = 6;
-            assetPath.color = 0xFFaaaaaa;
-            assetPath.width = 130;
-            assetPathBoxBox.addComponent(assetPath);
-
-            var renderTypeBox = new HBox();
-            characterInfoWindow.addComponent(renderTypeBox);
-
-            var renderTypeLabel = new Label();
-            renderTypeLabel.text = 'Render Type:';
-            renderTypeLabel.marginTop = 6;
-            renderTypeBox.addComponent(renderTypeLabel);
-
-            renderType = new TextField();
-            renderType.placeholder = 'Sparrow';
-            // assetPath.marginTop = 6;
-            renderType.color = 0xFFaaaaaa;
-            renderType.width = 123;
-            renderTypeBox.addComponent(renderType);
-
-            var singTimeBox = new HBox();
-            characterInfoWindow.addComponent(singTimeBox);
-
-            var singTimeLabel = new Label();
-            singTimeLabel.text = 'Sing Time:';
-            singTimeLabel.marginTop = 6;
-            singTimeBox.addComponent(singTimeLabel);
-
-            var charflipXBox = new HBox();
-            charflipXBox.marginTop = -10;
-            charflipXBox.marginLeft = 30;
-            characterInfoWindow.addComponent(charflipXBox);
-
-            var charFlipX = new Label();
-            charFlipX.text = 'Flip X:';
-            charFlipX.marginTop = 6;
-            charflipXBox.addComponent(charFlipX);
-
-            var charFlipXCheckBox = new CheckBox();
-            charFlipXCheckBox.marginTop = 5;
-            charflipXBox.addComponent(charFlipXCheckBox);
-            characterInfoWindow.addComponent(charflipXBox);
-
-            var charFlipY = new Label();
-            charFlipY.text = 'Flip Y:';
-            charFlipY.marginTop = 6;
-            charflipXBox.addComponent(charFlipY);
-
-            var charFlipYCheckBox = new CheckBox();
-            charFlipYCheckBox.marginTop = 5;
-            charflipXBox.addComponent(charFlipYCheckBox);
-
-            var singTimeStepper = new NumberStepper();
-            singTimeStepper.color = 0xFFaaaaaa;
-            singTimeStepper.width = 138;
-            singTimeBox.addComponent(singTimeStepper);
-
-            var splitter = new HorizontalSplitter();
-            characterInfoWindow.addComponent(splitter);
-
-            var animLabel = new Label();
-            animLabel.text = 'Animations';
-            animLabel.marginTop = 8;
-            characterInfoWindow.addComponent(animLabel);
-
-            animationList = new ListView();
-            animationList.width = 215;
-            animationList.height = 200;
-            animationList.marginTop = 6;
-            characterInfoWindow.addComponent(animationList);
-            
-        }
-        editMenu.addComponent(charPropertiesItem);
-
-        editAnimsItem = new MenuItem();
-        editAnimsItem.text = "Animation Info";
-        editAnimsItem.shortcutText = '';
-        editAnimsItem.onClick = () -> {
-
-            openSound();
-
-            editAnimWindow = new Window();
-            editAnimWindow.cameras = [camHUD];
-            editAnimWindow.windowManager = windowManager;
-            editAnimWindow.title = "Animation Info";
-            editAnimWindow.maximizable = false;
-            editAnimWindow.minimizable = false;
-            editAnimWindow.collapsable = false;
-            editAnimWindow.width = 250;
-            editAnimWindow.height = 280;
-            editAnimWindow.screenCenter();
-            editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width;
-            editAnimWindow.y = topBar.height + 10;
-            add(editAnimWindow);
-
-            animNameBox = new HBox();
-            editAnimWindow.addComponent(animNameBox);
-
-            var ainmNameLabel = new Label();
-            ainmNameLabel.text = 'Name:';
-            ainmNameLabel.marginTop = 6;
-            animNameBox.addComponent(ainmNameLabel);
-
-            var animName = new TextField();
-            animName.placeholder = "Animation Name";
-            animName.width =  175;
-            animName.color = 0xFFaaaaaa;
-            animNameBox.addComponent(animName);
-
-            prefixBox = new HBox();
-            editAnimWindow.addComponent(prefixBox);
-
-            var prefixLabel = new Label();
-            prefixLabel.text = 'Prefix:';
-            prefixLabel.marginTop = 6;
-            prefixBox.addComponent(prefixLabel);
-
-            var prefix = new TextField();
-            prefix.placeholder = "None";
-            prefix.width =  161;
-            prefix.color = 0xFFaaaaaa;
-            prefixBox.addComponent(prefix);
-            
-            indicesBox = new HBox();
-            editAnimWindow.addComponent(indicesBox);
-
-            var indicesLabel = new Label();
-            indicesLabel.text = 'Indices:';
-            indicesLabel.marginTop = 6;
-            indicesBox.addComponent(indicesLabel);
-
-            var indices = new TextField();
-            indices.placeholder = "None";
-            indices.width =  154;
-            indices.color = 0xFFaaaaaa;
-            indicesBox.addComponent(indices);
-
-            animOffsetsBox = new HBox();
-            editAnimWindow.addComponent(animOffsetsBox);
-
-            var aninOffsetLabel = new Label();
-            aninOffsetLabel.text = 'Offsets:';
-            aninOffsetLabel.marginTop = 6;
-            animOffsetsBox.addComponent(aninOffsetLabel);
-
-            var animAssetPathBoxBox = new HBox();
-            editAnimWindow.addComponent(animAssetPathBoxBox);
-
-            var animAssetPathLabel = new Label();
-            animAssetPathLabel.text = 'Asset Path:';
-            animAssetPathLabel.marginTop = 6;
-            animAssetPathBoxBox.addComponent(animAssetPathLabel);
-
-            animAssetPath = new TextField();
-            animAssetPath.placeholder = 'None';
-            // assetPath.marginTop = 6;
-            animAssetPath.color = 0xFFaaaaaa;
-            animAssetPath.width = 135;
-            animAssetPathBoxBox.addComponent(animAssetPath);
-
-            var animStepperX = new NumberStepper();
-            animStepperX.color = 0xFFaaaaaa;
-            animStepperX.width = 65;
-            animStepperX.marginLeft = 20;
-            animOffsetsBox.addComponent(animStepperX);
-
-            var animStepperY = new NumberStepper();
-            animStepperY.color = 0xFFaaaaaa;
-            animStepperY.marginLeft = 20;
-            animStepperY.width = 65;
-            animOffsetsBox.addComponent(animStepperY);
-
-            var loopBox = new HBox();
-            loopBox.marginLeft = 75;
-            editAnimWindow.addComponent(loopBox);
-
-            var loopLabel = new Label();
-            loopLabel.text = 'Looped:';
-            loopLabel.marginTop = 6;
-            loopBox.addComponent(loopLabel);
-
-            var loopCheckBox = new CheckBox();
-            loopCheckBox.marginTop = 6;
-            loopBox.addComponent(loopCheckBox);
-
-            var animflipXBox = new HBox();
-            animflipXBox.marginTop = 10;
-            animflipXBox.marginLeft = 30;
-            editAnimWindow.addComponent(animflipXBox);
-
-            var animFlipX = new Label();
-            animFlipX.text = 'Flip X:';
-            animFlipX.marginTop = 6;
-            animflipXBox.addComponent(animFlipX);
-
-            var animFlipXCheckBox = new CheckBox();
-            animFlipXCheckBox.marginTop = 5;
-            animflipXBox.addComponent(animFlipXCheckBox);
-
-            var animFlipY = new Label();
-            animFlipY.text = 'Flip Y:';
-            animFlipY.marginTop = 6;
-            animflipXBox.addComponent(animFlipY);
-
-            var animFlipYCheckBox = new CheckBox();
-            animFlipYCheckBox.marginTop = 5;
-            animflipXBox.addComponent(animFlipYCheckBox);
-        }
-        
-        editMenu.addComponent(editAnimsItem);      
-        
-        var separator = new MenuSeparator();
-        fileMenu.addComponent(separator); 
-
-        deleteAnimItem = new MenuItem();
-        deleteAnimItem.text = 'Delete Current Animation';
-        deleteAnimItem.shortcutText = '';
-        deleteAnimItem.color = 0xFFFF0000;
-        deleteAnimItem.onClick = () -> {
-
-        }
-        editMenu.addComponent(deleteAnimItem);       
-
-        // -- Tools Dropdown -- \\
-        toolsMenu = new Menu();
-        toolsMenu.text = 'Tools'; 
-        topBar.addComponent(toolsMenu);
-
-        resetCameraItem = new MenuItem();
-        resetCameraItem.text = 'Reset Camera';
-        resetCameraItem.shortcutText = '';
-        resetCameraItem.onClick = () -> {
-
-        }
-        toolsMenu.addComponent(resetCameraItem);
-
-        var separator = new MenuSeparator();
-        fileMenu.addComponent(separator); 
-
-        clearAnimOffsetsItem = new MenuItem();
-        clearAnimOffsetsItem.text = 'Clear Animation Offsets';
-        clearAnimOffsetsItem.shortcutText = '';
-        clearAnimOffsetsItem.onClick = () -> {
-
-        }
-        toolsMenu.addComponent(clearAnimOffsetsItem);
-
-
-        clearAllOffsetsItem = new MenuItem();
-        clearAllOffsetsItem.text = 'Clear All Animation Offsets';
-        clearAllOffsetsItem.shortcutText = '';
-        clearAllOffsetsItem.color = 0xFFFF0000;
-        clearAllOffsetsItem.onClick = () -> {
-
-        }
-        toolsMenu.addComponent(clearAllOffsetsItem);
-        
-        // -- Converters Dropdown -- \\
-        convertersMenu = new Menu();
-        convertersMenu.text = 'Converters'; 
-        topBar.addComponent(convertersMenu);
-        
-        psychConvertItem = new MenuItem();
-        psychConvertItem.text = 'Psych to V-Slice';
-        psychConvertItem.shortcutText = '';
-        psychConvertItem.onClick = () -> {
-
-        }
-        convertersMenu.addComponent(psychConvertItem);
-        
-        codenameConvertItem = new MenuItem();
-        codenameConvertItem.text = 'Codename to V-Slice';
-        codenameConvertItem.shortcutText = '';
-        codenameConvertItem.onClick = () -> {
-
-        }
-        convertersMenu.addComponent(codenameConvertItem);
-
-        // -- Help Menu! -- \\
-        helpItem = new Menu();
-        helpItem.text = 'Help';
-        helpItem.onClick = () -> {
-
-        }
-        topBar.addComponent(helpItem);
-        
-        userGuideItem = new MenuItem();
-        userGuideItem.text = 'User Guide';
-        userGuideItem.shortcutText = 'F1';
-        userGuideItem.onClick = () -> {
-
-        }
-        helpItem.addComponent(userGuideItem);
-        
-        checkForUpdateItem = new MenuItem();
-        checkForUpdateItem.text = 'Check for Updates';
-        checkForUpdateItem.shortcutText = 'Ctrl + U';
-        checkForUpdateItem.onClick = () -> {
-
-        }
-        helpItem.addComponent(checkForUpdateItem);
-
-    }
-
-    function openSound() {
-        FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
-    }
-
-    function update() {
-        super.update();        
-        get_conductorInUse().update();
-    }
-
-    override function beatHit() {
-        super.beatHit();
-        var curBeat = get_conductorInUse().currentBeat;
-    }
-    override function stepHit() {
-        super.stepHit();
-        var curStep = get_conductorInUse().currentStep;
-    }
+		FlxG.camera.scroll.x = MathUtil.coolLerp(FlxG.camera.scroll.x, cameraTarget.x, 0.1);
+		FlxG.camera.scroll.y = MathUtil.coolLerp(FlxG.camera.scroll.y, cameraTarget.y, 0.1);
+		FlxG.camera.zoom = MathUtil.coolLerp(FlxG.camera.zoom, cameraTarget.zoom, 0.1);
+
+		bg.scale.set(1/FlxG.camera.zoom, 1/FlxG.camera.zoom);
+
+		var shiftAmount = FlxG.keys.pressed.SHIFT ? 15 : 5;
+
+		if (FlxG.keys.pressed.A) {
+			cameraTarget.x -= shiftAmount;
+		} else if (FlxG.keys.pressed.D) {
+			cameraTarget.x += shiftAmount;
+		}
+
+		if (FlxG.keys.pressed.W) {
+			cameraTarget.y -= shiftAmount;
+		} else if (FlxG.keys.pressed.S) {
+			cameraTarget.y += shiftAmount;
+		}
+
+		if (FlxG.keys.pressed.Q) {
+			cameraTarget.zoom -= shiftAmount/1000;
+		} else if (FlxG.keys.pressed.E) {
+			cameraTarget.zoom += shiftAmount/1000;
+		}
+		if (cameraTarget.zoom < 0.01) {
+			cameraTarget.zoom = 0.01;
+		}
+	}
+
+	override function beatHit() {
+		super.beatHit();
+		var curBeat = get_conductorInUse().currentBeat;
+	}
+	override function stepHit() {
+		super.stepHit();
+		var curStep = get_conductorInUse().currentStep;
+	}
 
 }
