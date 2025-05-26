@@ -71,6 +71,10 @@ class CharacterEditorV2 extends MusicBeatState {
 	var editorTitle = "Nova Character Editor REFRESHED";
 	// ----------------- \\
 
+	// -- UI Elements \\
+	var animationList; 			// Asigned to variables because caused issue
+	var charName;
+	var assetPath;
 
 	var bg:FunkinSprite;
 
@@ -114,9 +118,22 @@ class CharacterEditorV2 extends MusicBeatState {
 			return parseJsonString(daString);
 		}
 	}
+
+	public function reloadAnimationList() {
+		if (animationList == null) { return; }
+		//animationList = new ListView();
+		animationList.selectedItem = null;
+		animationList.selectedItems = [];
+		var data = new ArrayDataSource();
+		animationList.dataSource = data;
+		for (i in curCharacterData.character.animations) {
+			data.add( { text: i.name } );
+		}
+	}
 	
 	function loadCharacter(characterData) {
 		curCharacterData = characterData;
+		reloadAnimationList();
 		var character = characterData.character;
 		if (charName != null){
 			charName.text = character.name;
@@ -127,7 +144,9 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		character.renderType = character.renderType != null ? character.renderType : "sparrow";
-		renderType.text = character.renderType;
+		if (renderType != null) {
+			renderType.text = character.renderType;
+		}
 
 		if (characterSprite != null) {
 			remove(characterSprite);
@@ -138,6 +157,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		characterSprite.updateHitbox();
 		characterSprite.screenCenter();
 		characterSprite.playAnimation("idle");
+		characterSprite.flipX = false;
 		add(characterSprite);
 	}
 
@@ -181,11 +201,6 @@ class CharacterEditorV2 extends MusicBeatState {
 		bg.updateHitbox();
 		bg.screenCenter();
 		add(bg);
-
-		characterSprite = new MultiSparrowCharacter("bf");
-		characterSprite.onCreate();
-		characterSprite.screenCenter();
-		add(characterSprite);
 
 		Cursor.show();
 		var chartEditor = new ChartEditorState();
@@ -396,6 +411,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterInfoWindow.addComponent(animLabel);
 
 			animationList = new ListView();
+			animationList.onChange = ()->{
+				characterSprite.playAnimation(animationList.selectedItem.text, true);
+			}
 			animationList.width = 215;
 			animationList.height = 200;
 			animationList.marginTop = 6;
@@ -639,6 +657,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		watermark.cameras = [camHUD];
 		add(watermark);
 
+		loadCharacter(characterData[0]);
+
 	}
 
 	function openSound() {
@@ -665,6 +685,29 @@ class CharacterEditorV2 extends MusicBeatState {
 			cameraTarget.x -= shiftAmount;
 		} else if (FlxG.keys.pressed.D) {
 			cameraTarget.x += shiftAmount;
+		}
+
+		
+		var directionKeys = [
+			FlxG.keys.justPressed.J,
+			FlxG.keys.justPressed.K,
+			FlxG.keys.justPressed.I,
+			FlxG.keys.justPressed.L,
+			FlxG.keys.justPressed.Z
+		];
+		var directionAnims = [
+			"singLEFT",
+			"singDOWN",
+			"singUP",
+			"singRIGHT",
+			"idle"
+		];
+		var index = 0;
+		for (i in directionKeys) {
+			if (i) {
+				characterSprite.playAnimation(directionAnims[index] + (FlxG.keys.pressed.SHIFT ? "-alt" : ""), true);
+			}
+			index++;
 		}
 
 		if (FlxG.keys.pressed.W) {
