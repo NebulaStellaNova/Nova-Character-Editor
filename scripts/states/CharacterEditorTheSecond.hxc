@@ -10,13 +10,13 @@ import funkin.play.character.MultiSparrowCharacter;
 
 import funkin.input.Cursor;
 
-import funkin.util.FileUtil;
-
 import funkin.ui.MusicBeatState;
 
 import funkin.ui.mainmenu.MainMenuState;
 
+import funkin.util.FileUtil;
 import funkin.util.MathUtil;
+import funkin.util.WindowUtil;
 
 import funkin.ui.debug.charting.ChartEditorState;
 
@@ -44,9 +44,9 @@ import haxe.ui.containers.Box;
 import haxe.ui.containers.HBox;
 import haxe.ui.containers.Header;
 import haxe.ui.containers.TabView;
-import haxe.ui.containers.HorizontalSplitter;
 import haxe.ui.containers.ListView;
 import haxe.ui.containers.TableView;
+import haxe.ui.containers.HorizontalSplitter;
 
 import haxe.ui.containers.menus.Menu;
 import haxe.ui.containers.menus.MenuBar;
@@ -56,6 +56,7 @@ import haxe.ui.containers.menus.MenuOptionBox;
 import haxe.ui.containers.menus.MenuSeparator;
 
 import haxe.ui.containers.dialogs.Dialog;
+import haxe.ui.containers.dialogs.MessageBox;
 
 import haxe.ui.containers.windows.Window;
 import haxe.ui.containers.windows.WindowManager;
@@ -179,7 +180,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.create();
 		
 		enbaleAutoPause();
-	
+		WindowUtil.setWindowTitle("Friday Night Funkin' - Nova Character Editor");
+
 		characterData.push({
 			id: "bf",
 			fileName: "bf.json",
@@ -483,6 +485,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		deleteAnimItem.color = 0xFFFF0000;
 		deleteAnimItem.onClick = () -> {
 
+			openSound();
+
+			deleteAnimWarningMessage = new Dialog();
+			deleteAnimWarningMessage.title = 'hello world';
+			add(deleteAnimWarningMessage);
 		}
 		editMenu.addComponent(deleteAnimItem);       
 
@@ -577,133 +584,132 @@ class CharacterEditorV2 extends MusicBeatState {
 	}
 
 	function openAnimEditWindow() {
+		editAnimWindow = new Window();
+		editAnimWindow.cameras = [camHUD];
+		editAnimWindow.windowManager = windowManager;
+		editAnimWindow.title = "Animation Info";
+		editAnimWindow.maximizable = false;
+		editAnimWindow.minimizable = false;
+		editAnimWindow.collapsable = false;
+		editAnimWindow.width = 250;
+		editAnimWindow.height = 280;
+		editAnimWindow.screenCenter();
+		editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width;
+		editAnimWindow.y = topBar.height + 10;
+		add(editAnimWindow);
 
-			editAnimWindow = new Window();
-			editAnimWindow.cameras = [camHUD];
-			editAnimWindow.windowManager = windowManager;
-			editAnimWindow.title = "Animation Info";
-			editAnimWindow.maximizable = false;
-			editAnimWindow.minimizable = false;
-			editAnimWindow.collapsable = false;
-			editAnimWindow.width = 250;
-			editAnimWindow.height = 280;
-			editAnimWindow.screenCenter();
-			editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width;
-			editAnimWindow.y = topBar.height + 10;
-			add(editAnimWindow);
+		animNameBox = new HBox();
+		editAnimWindow.addComponent(animNameBox);
 
-			animNameBox = new HBox();
-			editAnimWindow.addComponent(animNameBox);
+		var ainmNameLabel = new Label();
+		ainmNameLabel.text = 'Name:';
+		ainmNameLabel.marginTop = 6;
+		animNameBox.addComponent(ainmNameLabel);
 
-			var ainmNameLabel = new Label();
-			ainmNameLabel.text = 'Name:';
-			ainmNameLabel.marginTop = 6;
-			animNameBox.addComponent(ainmNameLabel);
+		var animName = new TextField();
+		animName.placeholder = "Animation Name";
+		animName.width =  175;
+		animName.color = 0xFFaaaaaa;
+		animNameBox.addComponent(animName);
 
-			var animName = new TextField();
-			animName.placeholder = "Animation Name";
-			animName.width =  175;
-			animName.color = 0xFFaaaaaa;
-			animNameBox.addComponent(animName);
+		prefixBox = new HBox();
+		editAnimWindow.addComponent(prefixBox);
 
-			prefixBox = new HBox();
-			editAnimWindow.addComponent(prefixBox);
+		var prefixLabel = new Label();
+		prefixLabel.text = 'Prefix:';
+		prefixLabel.marginTop = 6;
+		prefixBox.addComponent(prefixLabel);
 
-			var prefixLabel = new Label();
-			prefixLabel.text = 'Prefix:';
-			prefixLabel.marginTop = 6;
-			prefixBox.addComponent(prefixLabel);
+		var prefix = new TextField();
+		prefix.placeholder = "None";
+		prefix.width =  161;
+		prefix.color = 0xFFaaaaaa;
+		prefixBox.addComponent(prefix);
+		
+		indicesBox = new HBox();
+		editAnimWindow.addComponent(indicesBox);
 
-			var prefix = new TextField();
-			prefix.placeholder = "None";
-			prefix.width =  161;
-			prefix.color = 0xFFaaaaaa;
-			prefixBox.addComponent(prefix);
-			
-			indicesBox = new HBox();
-			editAnimWindow.addComponent(indicesBox);
+		var indicesLabel = new Label();
+		indicesLabel.text = 'Indices:';
+		indicesLabel.marginTop = 6;
+		indicesBox.addComponent(indicesLabel);
 
-			var indicesLabel = new Label();
-			indicesLabel.text = 'Indices:';
-			indicesLabel.marginTop = 6;
-			indicesBox.addComponent(indicesLabel);
+		var indices = new TextField();
+		indices.placeholder = "None";
+		indices.width =  154;
+		indices.color = 0xFFaaaaaa;
+		indicesBox.addComponent(indices);
 
-			var indices = new TextField();
-			indices.placeholder = "None";
-			indices.width =  154;
-			indices.color = 0xFFaaaaaa;
-			indicesBox.addComponent(indices);
+		animOffsetsBox = new HBox();
+		editAnimWindow.addComponent(animOffsetsBox);
 
-			animOffsetsBox = new HBox();
-			editAnimWindow.addComponent(animOffsetsBox);
+		var aninOffsetLabel = new Label();
+		aninOffsetLabel.text = 'Offsets:';
+		aninOffsetLabel.marginTop = 6;
+		animOffsetsBox.addComponent(aninOffsetLabel);
 
-			var aninOffsetLabel = new Label();
-			aninOffsetLabel.text = 'Offsets:';
-			aninOffsetLabel.marginTop = 6;
-			animOffsetsBox.addComponent(aninOffsetLabel);
+		var animAssetPathBoxBox = new HBox();
+		editAnimWindow.addComponent(animAssetPathBoxBox);
 
-			var animAssetPathBoxBox = new HBox();
-			editAnimWindow.addComponent(animAssetPathBoxBox);
+		var animAssetPathLabel = new Label();
+		animAssetPathLabel.text = 'Asset Path:';
+		animAssetPathLabel.marginTop = 6;
+		animAssetPathBoxBox.addComponent(animAssetPathLabel);
 
-			var animAssetPathLabel = new Label();
-			animAssetPathLabel.text = 'Asset Path:';
-			animAssetPathLabel.marginTop = 6;
-			animAssetPathBoxBox.addComponent(animAssetPathLabel);
+		animAssetPath = new TextField();
+		animAssetPath.placeholder = 'None';
+		// assetPath.marginTop = 6;
+		animAssetPath.color = 0xFFaaaaaa;
+		animAssetPath.width = 135;
+		animAssetPathBoxBox.addComponent(animAssetPath);
 
-			animAssetPath = new TextField();
-			animAssetPath.placeholder = 'None';
-			// assetPath.marginTop = 6;
-			animAssetPath.color = 0xFFaaaaaa;
-			animAssetPath.width = 135;
-			animAssetPathBoxBox.addComponent(animAssetPath);
+		var animStepperX = new NumberStepper();
+		animStepperX.color = 0xFFaaaaaa;
+		animStepperX.width = 65;
+		animStepperX.marginLeft = 20;
+		animOffsetsBox.addComponent(animStepperX);
 
-			var animStepperX = new NumberStepper();
-			animStepperX.color = 0xFFaaaaaa;
-			animStepperX.width = 65;
-			animStepperX.marginLeft = 20;
-			animOffsetsBox.addComponent(animStepperX);
+		var animStepperY = new NumberStepper();
+		animStepperY.color = 0xFFaaaaaa;
+		animStepperY.marginLeft = 20;
+		animStepperY.width = 65;
+		animOffsetsBox.addComponent(animStepperY);
 
-			var animStepperY = new NumberStepper();
-			animStepperY.color = 0xFFaaaaaa;
-			animStepperY.marginLeft = 20;
-			animStepperY.width = 65;
-			animOffsetsBox.addComponent(animStepperY);
+		var loopBox = new HBox();
+		loopBox.marginLeft = 75;
+		editAnimWindow.addComponent(loopBox);
 
-			var loopBox = new HBox();
-			loopBox.marginLeft = 75;
-			editAnimWindow.addComponent(loopBox);
+		var loopLabel = new Label();
+		loopLabel.text = 'Looped:';
+		loopLabel.marginTop = 6;
+		loopBox.addComponent(loopLabel);
 
-			var loopLabel = new Label();
-			loopLabel.text = 'Looped:';
-			loopLabel.marginTop = 6;
-			loopBox.addComponent(loopLabel);
+		var loopCheckBox = new CheckBox();
+		loopCheckBox.marginTop = 6;
+		loopBox.addComponent(loopCheckBox);
 
-			var loopCheckBox = new CheckBox();
-			loopCheckBox.marginTop = 6;
-			loopBox.addComponent(loopCheckBox);
+		var animflipXBox = new HBox();
+		animflipXBox.marginTop = 10;
+		animflipXBox.marginLeft = 30;
+		editAnimWindow.addComponent(animflipXBox);
 
-			var animflipXBox = new HBox();
-			animflipXBox.marginTop = 10;
-			animflipXBox.marginLeft = 30;
-			editAnimWindow.addComponent(animflipXBox);
+		var animFlipX = new Label();
+		animFlipX.text = 'Flip X:';
+		animFlipX.marginTop = 6;
+		animflipXBox.addComponent(animFlipX);
 
-			var animFlipX = new Label();
-			animFlipX.text = 'Flip X:';
-			animFlipX.marginTop = 6;
-			animflipXBox.addComponent(animFlipX);
+		var animFlipXCheckBox = new CheckBox();
+		animFlipXCheckBox.marginTop = 5;
+		animflipXBox.addComponent(animFlipXCheckBox);
 
-			var animFlipXCheckBox = new CheckBox();
-			animFlipXCheckBox.marginTop = 5;
-			animflipXBox.addComponent(animFlipXCheckBox);
+		var animFlipY = new Label();
+		animFlipY.text = 'Flip Y:';
+		animFlipY.marginTop = 6;
+		animflipXBox.addComponent(animFlipY);
 
-			var animFlipY = new Label();
-			animFlipY.text = 'Flip Y:';
-			animFlipY.marginTop = 6;
-			animflipXBox.addComponent(animFlipY);
-
-			var animFlipYCheckBox = new CheckBox();
-			animFlipYCheckBox.marginTop = 5;
-			animflipXBox.addComponent(animFlipYCheckBox);
+		var animFlipYCheckBox = new CheckBox();
+		animFlipYCheckBox.marginTop = 5;
+		animflipXBox.addComponent(animFlipYCheckBox);
 	}
 
 	function openSound() {
@@ -802,6 +808,11 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	function disableAutoPause() {
 		FlxG.autoPause = true;
+	}
+
+	function destroy() {
+		super.destroy();
+		WindowUtil.setWindowTitle("Friday Night Funkin'");
 	}
 
 }
