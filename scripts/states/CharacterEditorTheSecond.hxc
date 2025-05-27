@@ -432,6 +432,26 @@ class CharacterEditorV2 extends MusicBeatState {
 			singTimeStepper.pos = curCharacterData.character.singTime;
 			singTimeBox.addComponent(singTimeStepper);
 
+			charOffsetsBox = new HBox();
+			characterInfoWindow.addComponent(charOffsetsBox);
+
+			var charOffsetLabel = new Label();
+			charOffsetLabel.text = 'Offsets:';
+			charOffsetLabel.marginTop = 6;
+			charOffsetsBox.addComponent(charOffsetLabel);
+
+			var charStepperX = new NumberStepper();
+			charStepperX.color = 0xFFaaaaaa;
+			charStepperX.width = 65;
+			charStepperX.marginLeft = 17;
+			charOffsetsBox.addComponent(charStepperX);
+
+			var charStepperY = new NumberStepper();
+			charStepperY.color = 0xFFaaaaaa;
+			charStepperY.marginLeft = 17;
+			charStepperY.width = 65;
+			charOffsetsBox.addComponent(charStepperY);
+
 			var charflipXBox = new HBox();
 			charflipXBox.marginTop = -10;
 			charflipXBox.marginLeft = 30;
@@ -684,6 +704,18 @@ class CharacterEditorV2 extends MusicBeatState {
 		aninOffsetLabel.marginTop = 6;
 		animOffsetsBox.addComponent(aninOffsetLabel);
 
+		var animStepperX = new NumberStepper();
+		animStepperX.color = 0xFFaaaaaa;
+		animStepperX.width = 65;
+		animStepperX.marginLeft = 20;
+		animOffsetsBox.addComponent(animStepperX);
+
+		var animStepperY = new NumberStepper();
+		animStepperY.color = 0xFFaaaaaa;
+		animStepperY.marginLeft = 20;
+		animStepperY.width = 65;
+		animOffsetsBox.addComponent(animStepperY);
+
 		var animAssetPathBoxBox = new HBox();
 		editAnimWindow.addComponent(animAssetPathBoxBox);
 
@@ -698,18 +730,6 @@ class CharacterEditorV2 extends MusicBeatState {
 		animAssetPath.color = 0xFFaaaaaa;
 		animAssetPath.width = 135;
 		animAssetPathBoxBox.addComponent(animAssetPath);
-
-		var animStepperX = new NumberStepper();
-		animStepperX.color = 0xFFaaaaaa;
-		animStepperX.width = 65;
-		animStepperX.marginLeft = 20;
-		animOffsetsBox.addComponent(animStepperX);
-
-		var animStepperY = new NumberStepper();
-		animStepperY.color = 0xFFaaaaaa;
-		animStepperY.marginLeft = 20;
-		animStepperY.width = 65;
-		animOffsetsBox.addComponent(animStepperY);
 
 		var loopBox = new HBox();
 		loopBox.marginLeft = 75;
