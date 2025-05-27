@@ -19,6 +19,7 @@ import funkin.util.FileUtil;
 import flixel.util.FlxSave;
 import funkin.util.MathUtil;
 import funkin.util.WindowUtil;
+import funkin.util.ReflectUtil;
 import funkin.ui.debug.charting.ChartEditorState;
 
 import funkin.play.character.CharacterDataParser;
@@ -66,6 +67,7 @@ import haxe.ui.containers.windows.WindowManager;
 import haxe.ui.data.ArrayDataSource;
 
 import haxe.ui.macros.ComponentMacros;
+import openfl.geom.ColorTransform;
 
 class CharacterEditorV2 extends MusicBeatState {
 
@@ -85,6 +87,9 @@ class CharacterEditorV2 extends MusicBeatState {
 	var charStepperY;
 	var animName;
 	var prefix;
+	var indices;
+	var animStepperX;
+	var animStepperY;
 
 	var curAnim;
 
@@ -100,6 +105,9 @@ class CharacterEditorV2 extends MusicBeatState {
 	var topBar;
 	var bottomBar;
 	var characterInfoWindow;
+
+	var uiColor = 0xFFFFFFFF;
+	var buttonColor = 0xFFFF0000;
 
 	var save = new FlxSave();
 	
@@ -259,6 +267,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		bg.color = save.data.bgColor;
 		add(bg);
 
+		uiColor = save.data.uiColor != null ? save.data.uiColor : 0xFFFFFFFF;
+
 		Cursor.show();
 		var chartEditor = new ChartEditorState();
 		
@@ -283,10 +293,10 @@ class CharacterEditorV2 extends MusicBeatState {
 		charOffsetXLabel.fontSize = 30;
 		bottomBar.addComponent(charOffsetXLabel);
 
-		charOffsetYLabel = new Label();
-		charOffsetYLabel.text = 'Y:' + null + '|';
-		charOffsetYLabel.fontSize = 30;
-		bottomBar.addComponent(charOffsetYLabel);
+		//charOffsetYLabel = new Label();
+		//charOffsetYLabel.text = 'Y:' + null + '|';
+		//charOffsetYLabel.fontSize = 30;
+		//bottomBar.addComponent(charOffsetYLabel);
 
 		// -- File Dropdown -- \\
 		fileMenu = new Menu();
@@ -361,7 +371,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			preferenceTabs.addComponent(bgColorPickerBox);
 
 			var bgColorPicker = new ColorPicker();
-			bgColorPicker.currentColor = bg.color;
+			bgColorPicker.currentColor = save.data.bgColor;
 			bgColorPicker.width = preferenceTabs.width - 15;
 			bgColorPicker.height = preferenceTabs.height - 40;
 			bgColorPicker.onChange = ()->{
@@ -369,6 +379,20 @@ class CharacterEditorV2 extends MusicBeatState {
 				save.data.bgColor = bgColorPicker.currentColor;
 			}
 			bgColorPickerBox.addComponent(bgColorPicker);
+
+			var uiColorPickerBox = new Box();
+			uiColorPickerBox.text = 'UI Color';
+			preferenceTabs.addComponent(uiColorPickerBox);
+
+			var uiColorPicker = new ColorPicker();
+			uiColorPicker.currentColor = save.data.uiColor;
+			uiColorPicker.width = preferenceTabs.width - 15;
+			uiColorPicker.height = preferenceTabs.height - 40;
+			uiColorPicker.onChange = ()->{
+				uiColor = uiColorPicker.currentColor;
+				save.data.uiColor = uiColorPicker.currentColor;
+			}
+			uiColorPickerBox.addComponent(uiColorPicker);
 
 		}
 		fileMenu.addComponent(preferencesItem);
@@ -554,7 +578,27 @@ class CharacterEditorV2 extends MusicBeatState {
 			animationList = new ListView();
 			animationList.onChange = ()->{
 				characterSprite.playAnimation(animationList.selectedItem.text, true);
-				animName.text = animationList.selectedItem.text;
+				var curAnim;
+				for (i in curCharacterData.character.animations) {
+					if (i.name == animationList.selectedItem.text) {
+						curAnim = i;
+					}
+				}
+				if (animName != null) {
+					animName.text = curAnim.name;
+				}
+				if (prefix != null) {
+					prefix.text = curAnim.prefix;
+				}
+				if (indices != null) {
+					indices.text = curAnim.indices;
+				}
+				if (animStepperX != null) {
+					animStepperX.pos = curAnim.offsets[0];
+				}
+				if (animStepperY != null) {
+					animStepperY.pos = curAnim.offsets[1];
+				}
 				// prefix.text = animationList.selectedItem.text;
 			}
 			animationList.width = 215;
@@ -729,10 +773,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		editAnimWindow.maximizable = false;
 		editAnimWindow.minimizable = false;
 		editAnimWindow.collapsable = false;
+		editAnimWindow.color = 0xFFFFFF00;
 		editAnimWindow.width = 250;
-		editAnimWindow.height = 280;
+		editAnimWindow.height = 270;
 		editAnimWindow.screenCenter();
-		editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width;
+		editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width - 10;
 		editAnimWindow.y = topBar.height + 10;
 		add(editAnimWindow);
 
@@ -749,7 +794,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		animName.placeholder = "Animation Name";
 		animName.text = characterSprite.animation.name;
 		animName.width =  175;
-		animName.color = 0xFFaaaaaa;
+		animName.color = editAnimWindow.color - 15000;
 		animNameBox.addComponent(animName);
 
 		prefixBox = new HBox();
@@ -763,7 +808,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		prefix = new TextField();
 		prefix.placeholder = "None";
 		prefix.width =  161;
-		prefix.color = 0xFFaaaaaa;
+		prefix.color = editAnimWindow.color - 15000;
 		prefix.onChange = ()->{
 			// prefix.text = 'abcd';
 		}
@@ -777,10 +822,10 @@ class CharacterEditorV2 extends MusicBeatState {
 		indicesLabel.marginTop = 6;
 		indicesBox.addComponent(indicesLabel);
 
-		var indices = new TextField();
+		indices = new TextField();
 		indices.placeholder = "None";
 		indices.width =  154;
-		indices.color = 0xFFaaaaaa;
+		indices.color = editAnimWindow.color - 15000;
 		indicesBox.addComponent(indices);
 
 		animOffsetsBox = new HBox();
@@ -791,14 +836,14 @@ class CharacterEditorV2 extends MusicBeatState {
 		aninOffsetLabel.marginTop = 6;
 		animOffsetsBox.addComponent(aninOffsetLabel);
 
-		var animStepperX = new NumberStepper();
-		animStepperX.color = 0xFFaaaaaa;
+		animStepperX = new NumberStepper();
+		animStepperX.color = editAnimWindow.color - 15000;
 		animStepperX.width = 65;
 		animStepperX.marginLeft = 20;
 		animOffsetsBox.addComponent(animStepperX);
 
-		var animStepperY = new NumberStepper();
-		animStepperY.color = 0xFFaaaaaa;
+		animStepperY = new NumberStepper();
+		animStepperY.color = editAnimWindow.color - 15000;
 		animStepperY.marginLeft = 20;
 		animStepperY.width = 65;
 		animOffsetsBox.addComponent(animStepperY);
@@ -814,9 +859,33 @@ class CharacterEditorV2 extends MusicBeatState {
 		animAssetPath = new TextField();
 		animAssetPath.placeholder = 'None';
 		// assetPath.marginTop = 6;
-		animAssetPath.color = 0xFFaaaaaa;
+		animAssetPath.color = editAnimWindow.color - 15000;
 		animAssetPath.width = 135;
 		animAssetPathBoxBox.addComponent(animAssetPath);
+
+		var animflipXBox = new HBox();
+		animflipXBox.marginTop = 0;
+		animflipXBox.marginLeft = 30;
+		editAnimWindow.addComponent(animflipXBox);
+
+		var animFlipX = new Label();
+		animFlipX.text = 'Flip X:';
+		animFlipX.marginTop = 6;
+		animflipXBox.addComponent(animFlipX);
+
+		var animFlipXCheckBox = new CheckBox();
+		animFlipXCheckBox.marginTop = 5;
+		animFlipXCheckBox.color = editAnimWindow.color - 15000;
+		animflipXBox.addComponent(animFlipXCheckBox);
+
+		var animFlipY = new Label();
+		animFlipY.text = 'Flip Y:';
+		animFlipY.marginTop = 6;
+		animflipXBox.addComponent(animFlipY);
+
+		var animFlipYCheckBox = new CheckBox();
+		animFlipYCheckBox.marginTop = 5;
+		animflipXBox.addComponent(animFlipYCheckBox);
 
 		var loopBox = new HBox();
 		loopBox.marginLeft = 75;
@@ -830,38 +899,65 @@ class CharacterEditorV2 extends MusicBeatState {
 		var loopCheckBox = new CheckBox();
 		loopCheckBox.marginTop = 6;
 		loopBox.addComponent(loopCheckBox);
-
-		var animflipXBox = new HBox();
-		animflipXBox.marginTop = 10;
-		animflipXBox.marginLeft = 30;
-		editAnimWindow.addComponent(animflipXBox);
-
-		var animFlipX = new Label();
-		animFlipX.text = 'Flip X:';
-		animFlipX.marginTop = 6;
-		animflipXBox.addComponent(animFlipX);
-
-		var animFlipXCheckBox = new CheckBox();
-		animFlipXCheckBox.marginTop = 5;
-		animflipXBox.addComponent(animFlipXCheckBox);
-
-		var animFlipY = new Label();
-		animFlipY.text = 'Flip Y:';
-		animFlipY.marginTop = 6;
-		animflipXBox.addComponent(animFlipY);
-
-		var animFlipYCheckBox = new CheckBox();
-		animFlipYCheckBox.marginTop = 5;
-		animflipXBox.addComponent(animFlipYCheckBox);
 	}
 
 	function openSound() {
 		FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
 	}
 
+	function darkenColor(color:Int, factor:Float) {
+		factor = Math.max(0, Math.min(1, factor));
+
+		var a = (color >> 24) & 0xFF;
+		var r = (color >> 16) & 0xFF;
+		var g = (color >> 8) & 0xFF;
+		var b = color & 0xFF;
+
+		r = Std.int(r * factor);
+		g = Std.int(g * factor);
+		b = Std.int(b * factor);
+
+		return (a << 24) | (r << 16) | (g << 8) | b;
+	}
+
+
+	function childCheck(parent) {
+		if (parent._children != null) {
+			for (child in parent._children) {
+				var childClassArray = ReflectUtil.getClassNameOf(child).split(".");
+				var theChildClass = childClassArray[childClassArray.length-1];
+				//trace(theChildClass);
+				var interactables = ["TextField", "CheckBox", "NumberStepper", "DropDown", "ListView", "Button"];
+				var blackList = ["FunkinSprite", "ScriptedSparrowCharacter", "ScriptedMultiSparrowCharacter", "ScriptedAnimateAtlasCharacter", "ColorPicker", "Label"];
+				if (interactables.contains(theChildClass) && !blackList.contains(theChildClass)) {
+					child.colorTransform = new ColorTransform();
+					child.colorTransform.blueMultiplier = 0.1;
+					child.colorTransform.redMultiplier = 0.1;
+					child.colorTransform.greenMultiplier = 0.1;
+				} else if (blackList.contains(theChildClass)) {
+					//var daAlpha = ReflectUtil.copy(child.alpha);
+					//child.color = 0xFFFFFFFF;
+					//child.alpha = daAlpha;
+				}
+				childCheck(child);
+			}
+			//trace("has children");
+		}
+	}
+
 	function update(event) {
 		super.update(event);
 		get_conductorInUse().update();
+
+		for (i in members) {
+			var blackList = ["FunkinSprite", "ScriptedSparrowCharacter", "ScriptedMultiSparrowCharacter", "ScriptedAnimateAtlasCharacter", "Box", "Label"];
+			var classArray = ReflectUtil.getClassNameOf(i).split(".");
+			var theClass = classArray[classArray.length-1];
+			if (!blackList.contains(theClass)) {
+				i.color = uiColor;
+				childCheck(i);
+			}
+		}
 
 		if (charStepperX != null) { // Bro fuck me. - nebula
 			/* curCharacterData.character.offsets[0] = charStepperX.pos;
@@ -887,8 +983,7 @@ class CharacterEditorV2 extends MusicBeatState {
 					i.offsets[1] += (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipY ? -1 : 1);
 				}
 				
-				charOffsetXLabel.text = 'X:' + i.offsets[0] + '|';
-				charOffsetYLabel.text = 'Y:' + i.offsets[1];
+				charOffsetXLabel.text = 'Offset X: ' + i.offsets[0] + ' | Offset Y: ' + i.offsets[1];
 
 				characterSprite.animationOffsets[i.name][0] = i.offsets[0];
 				characterSprite.animationOffsets[i.name][1] = i.offsets[1];
