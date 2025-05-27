@@ -310,7 +310,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterInfoWindow.minimizable = false;
 			characterInfoWindow.collapsable = false;
 			characterInfoWindow.width = 250;
-			characterInfoWindow.height = 525;
+			characterInfoWindow.height = 555;
 			characterInfoWindow.screenCenter();
 			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
 			characterInfoWindow.y = topBar.height + 10;
@@ -444,6 +444,22 @@ class CharacterEditorV2 extends MusicBeatState {
 				openAnimEditWindow();
 			}
 			editButtonBox.addComponent(animEditButton);
+
+			var createDeleteButtonBox = new HBox();
+			characterInfoWindow.addComponent(createDeleteButtonBox);
+
+			var createAnimButton = new Button();
+			createAnimButton.width = 105;
+			createAnimButton.marginTop = 6;
+			createAnimButton.text = 'New Anim';
+			createDeleteButtonBox.addComponent(createAnimButton);
+
+			var deleteAnimButton = new Button();
+			deleteAnimButton.width = 105;
+			deleteAnimButton.marginTop = 6;
+			deleteAnimButton.text = 'Delete Anim';
+			createDeleteButtonBox.addComponent(deleteAnimButton);
+
 
 			
 		}
@@ -758,6 +774,22 @@ class CharacterEditorV2 extends MusicBeatState {
 	override function beatHit() {
 		super.beatHit();
 		var curBeat = get_conductorInUse().currentBeat;
+
+		if (characterSprite.animation != null) {
+			if (characterSprite.animation.exists('idle')) {
+				if (characterSprite.animation.name == "idle" && !characterSprite.animation.curAnim.looped) {
+							characterSprite.animation.play("idle", true);
+				}
+			}
+			/* if (characterSprite.animation.exists("danceLeft")) {
+				if (characterSprite.animation.name == "danceLeft") {
+					characterSprite.animation.play("danceRight", true);
+				} else if (characterSprite.animation.name == "danceRight") {
+					characterSprite.animation.play("danceLeft", true);
+				}
+			} */
+		}
+
 	}
 	override function stepHit() {
 		super.stepHit();
