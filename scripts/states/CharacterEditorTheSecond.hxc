@@ -76,6 +76,9 @@ class CharacterEditorV2 extends MusicBeatState {
 	var animationList; 			// Asigned to variables because caused issue
 	var charName;
 	var assetPath;
+	var renderType;
+	var singTimeStepper;
+	var charFlipXCheckBox;
 
 	var bg:FunkinSprite;
 
@@ -84,18 +87,17 @@ class CharacterEditorV2 extends MusicBeatState {
 	var characterData = [];
 	var curCharacterData;
 	var characterSprite;
+	var onionSprite;
 
 	var topBar;
 	var bottomBar;
 	var characterInfoWindow;
 	
-	var renderType;
-	var singTimeStepper;
 
 	var cameraTarget = {
 		x: 0,
 		y: 0,
-		zoom: 1
+		zoom: 0.7
 	}
 
 	function new() {
@@ -159,12 +161,27 @@ class CharacterEditorV2 extends MusicBeatState {
 			renderType.text = character.renderType;
 		}
 
+		if (charFlipXCheckBox != null) {
+			charFlipXCheckBox.selected = character.flipX != null ? character.flipX : false;
+		}
+
 		if (characterSprite != null) {
 			remove(characterSprite);
+		}
+		if (onionSprite != null) {
+			remove(onionSprite);
 		}
 		
 		trace(characterData.id);
 		
+		onionSprite = CharacterDataParser.fetchCharacter(characterData.id);
+		onionSprite.updateHitbox();
+		onionSprite.screenCenter();
+		onionSprite.alpha = 0.5;
+		// characterSprite.playAnimation("idle");
+		onionSprite.flipX = false;
+		add(onionSprite);
+
 		characterSprite = CharacterDataParser.fetchCharacter(characterData.id);
 		characterSprite.updateHitbox();
 		characterSprite.screenCenter();
@@ -364,6 +381,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			charName = new TextField();
 			charName.placeholder = 'Character';
+			charName.text = curCharacterData.character.name;
 			charName.color = 0xFFaaaaaa;
 			charName.width = 172;
 			nameBox.addComponent(charName);
@@ -378,6 +396,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			assetPath = new TextField();
 			assetPath.placeholder = '';
+			assetPath.text = StringTools.replace(curCharacterData.character.assetPath, "characters/", "");
 			// assetPath.marginTop = 6;
 			assetPath.color = 0xFFaaaaaa;
 			assetPath.width = 130;
@@ -393,6 +412,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			renderType = new TextField();
 			renderType.placeholder = 'sparrow';
+			renderType.text = curCharacterData.character.renderType != null ? curCharacterData.character.renderType : "sparrow";
 			// assetPath.marginTop = 6;
 			renderType.color = 0xFFaaaaaa;
 			renderType.width = 123;
@@ -409,6 +429,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			singTimeStepper = new NumberStepper();
 			singTimeStepper.color = 0xFFaaaaaa;
 			singTimeStepper.width = 138;
+			singTimeStepper.pos = curCharacterData.character.singTime;
 			singTimeBox.addComponent(singTimeStepper);
 
 			var charflipXBox = new HBox();
@@ -421,7 +442,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			charFlipX.marginTop = 6;
 			charflipXBox.addComponent(charFlipX);
 
-			var charFlipXCheckBox = new CheckBox();
+			charFlipXCheckBox = new CheckBox();
 			charFlipXCheckBox.marginTop = 5;
 			charflipXBox.addComponent(charFlipXCheckBox);
 			characterInfoWindow.addComponent(charflipXBox);
@@ -480,7 +501,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			deleteAnimButton.text = 'Delete Anim';
 			createDeleteButtonBox.addComponent(deleteAnimButton);
 
-
+			reloadAnimationList();
 			
 		}
 		editMenu.addComponent(charPropertiesItem);
@@ -515,7 +536,9 @@ class CharacterEditorV2 extends MusicBeatState {
 		resetCameraItem.text = 'Reset Camera';
 		resetCameraItem.shortcutText = '';
 		resetCameraItem.onClick = () -> {
-
+			cameraTarget.zoom = 0.7;
+			cameraTarget.x = 0;
+			cameraTarget.y = 0;
 		}
 		toolsMenu.addComponent(resetCameraItem);
 
@@ -733,6 +756,32 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.update(event);
 		get_conductorInUse().update();
 
+		for (i in curCharacterData.character.animations) {
+			if (i.name == characterSprite.animation.name) {
+				if (FlxG.keys.justPressed.LEFT) {
+					i.offsets[0] -= (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipX ? -1 : 1);
+				}
+				if (FlxG.keys.justPressed.RIGHT) {
+					i.offsets[0] += (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipX ? -1 : 1);
+				}
+				if (FlxG.keys.justPressed.UP) {
+					i.offsets[1] -= (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipX ? -1 : 1);
+				}
+				if (FlxG.keys.justPressed.DOWN) {
+					i.offsets[1] += (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipX ? -1 : 1);
+				}
+
+				charOffsetXLabel.text = 'X:' + i.offsets[0] + '|';
+				charOffsetYLabel.text = 'Y:' + i.offsets[1];
+
+				characterSprite.animationOffsets[i.name][0] = i.offsets[0];
+				characterSprite.animationOffsets[i.name][1] = i.offsets[1];
+
+				onionSprite.animationOffsets[i.name][0] = i.offsets[0];
+				onionSprite.animationOffsets[i.name][1] = i.offsets[1];
+			}
+		}
+
 		if (FlxG.keys.justPressed.SPACE) {
             characterSprite.playAnimation(characterSprite.animation.name, true);
         }
@@ -772,6 +821,18 @@ class CharacterEditorV2 extends MusicBeatState {
 				characterSprite.playAnimation(directionAnims[index] + (FlxG.keys.pressed.SHIFT ? "-alt" : ""), true);
 			}
 			index++;
+		}
+
+		if (characterSprite != null) {
+			if (!FlxG.mouse.overlaps(characterSprite)) {
+				if (FlxG.mouse.pressed) {
+					cameraTarget.x -= FlxG.mouse.deltaX;
+					cameraTarget.y -= FlxG.mouse.deltaY;
+				}
+				
+			} else {
+				
+			}
 		}
 
 		if (FlxG.keys.pressed.W) {
