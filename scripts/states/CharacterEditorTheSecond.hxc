@@ -38,6 +38,7 @@ import haxe.ui.components.DropDown;
 import haxe.ui.components.TextArea;
 import haxe.ui.components.CheckBox;
 import haxe.ui.components.TextField;
+import haxe.ui.components.ColorPicker;
 import haxe.ui.components.NumberStepper;
 
 import haxe.ui.containers.Box;
@@ -639,6 +640,25 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		loadCharacter(characterData[0]);
 
+		
+		var fuckYouHaxeUI = new Window();
+		fuckYouHaxeUI.windowManager = windowManager;
+		fuckYouHaxeUI.title = "Background Color";
+		fuckYouHaxeUI.x = 200;
+		fuckYouHaxeUI.y = 200;
+		fuckYouHaxeUI.maximizable = false;
+		fuckYouHaxeUI.minimizable = false;
+		fuckYouHaxeUI.collapsable = false;
+		var bgColorPicker = new ColorPicker();
+		bgColorPicker.currentColor = bg.color;
+		bgColorPicker.width = 400;
+		bgColorPicker.onChange = ()->{
+			bg.color = bgColorPicker.currentColor;
+		}
+		
+		fuckYouHaxeUI.addComponent(bgColorPicker);
+		add(fuckYouHaxeUI);
+
 	}
 
 	function openAnimEditWindow() {
@@ -778,7 +798,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.update(event);
 		get_conductorInUse().update();
 
-		if (charStepperX != null) {
+		if (charStepperX != null) { // Bro fuck me.
 			/* curCharacterData.character.offsets[0] = charStepperX.pos;
 			curCharacterData.character.offsets[1] = charStepperY.pos; */
 			/* characterSprite.globalOffsets[0] = curCharacterData.character.offsets[0] != null ? curCharacterData.character.offsets[0] : 0;
