@@ -2,8 +2,9 @@ import haxe.Json;
 import StringTools;
 import flixel.FlxG;
 import flixel.FlxCamera;
-
 import funkin.audio.FunkinSound;
+
+import funkin.modding.PolymodHandler;
 
 import funkin.play.character.SparrowCharacter;
 import funkin.play.character.MultiSparrowCharacter;
@@ -11,20 +12,18 @@ import funkin.play.character.MultiSparrowCharacter;
 import funkin.input.Cursor;
 
 import funkin.ui.MusicBeatState;
-
 import funkin.ui.mainmenu.MainMenuState;
 
+
 import funkin.util.FileUtil;
+import flixel.util.FlxSave;
 import funkin.util.MathUtil;
 import funkin.util.WindowUtil;
-
 import funkin.ui.debug.charting.ChartEditorState;
 
 import funkin.play.character.CharacterDataParser;
 
 import funkin.graphics.FunkinSprite;
-
-import haxe.ui.RuntimeComponentBuilder;
 
 import haxe.ui.core.Screen;
 import haxe.ui.core.Component;
@@ -40,6 +39,8 @@ import haxe.ui.components.CheckBox;
 import haxe.ui.components.TextField;
 import haxe.ui.components.ColorPicker;
 import haxe.ui.components.NumberStepper;
+
+import haxe.ui.components.pickers.MenuItemPicker;
 
 import haxe.ui.containers.Box;
 import haxe.ui.containers.HBox;
@@ -82,6 +83,10 @@ class CharacterEditorV2 extends MusicBeatState {
 	var charFlipXCheckBox;
 	var charStepperX;
 	var charStepperY;
+	var animName;
+	var prefix;
+
+	var curAnim;
 
 	var bg:FunkinSprite;
 
@@ -95,6 +100,8 @@ class CharacterEditorV2 extends MusicBeatState {
 	var topBar;
 	var bottomBar;
 	var characterInfoWindow;
+
+	var save = new FlxSave();
 	
 
 	var cameraTarget = {
@@ -199,6 +206,19 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	function create() {
 		super.create();
+
+		save.bind("nova-editors", "NebulaStellaNova");
+		if(save.data.editorSong == null) {
+			save.data.editorSong = {
+				title: "Artistic Expression",
+				key: "chartEditorLoop"
+			}
+			if(save.data.bgColor == null) {
+				save.data.bgColor = 0xFFFFFFFF;
+			}
+		}
+
+
 		
 		enbaleAutoPause();
 		WindowUtil.setWindowTitle("Friday Night Funkin' - Nova Character Editor");
@@ -236,6 +256,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		bg.setGraphicSize(Std.int(bg.width * 1.2));
 		bg.updateHitbox();
 		bg.screenCenter();
+		bg.color = save.data.bgColor;
 		add(bg);
 
 		Cursor.show();
@@ -276,7 +297,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		newItem.text = 'New';
 		newItem.shortcutText = 'Ctrl + N';
 		newItem.onClick = () -> {
-
+			
 		}
 		fileMenu.addComponent(newItem);
 
@@ -312,12 +333,55 @@ class CharacterEditorV2 extends MusicBeatState {
 		
 		var separator = new MenuSeparator();
 		fileMenu.addComponent(separator);
+		
+		preferencesItem = new MenuItem();
+		preferencesItem.text = 'Preferences';
+		preferencesItem.onClick = () -> {
+			
+			openSound();
+
+			var preferencesWindow = new Window();
+			preferencesWindow.windowManager = windowManager;
+			preferencesWindow.title = 'Preferences';
+			preferencesWindow.width = 700;
+			preferencesWindow.height = 500;
+			preferencesWindow.screenCenter();
+			preferencesWindow.maximizable = false;
+			preferencesWindow.minimizable = false;
+			preferencesWindow.collapsable = false;
+			add(preferencesWindow);
+
+			var preferenceTabs = new TabView();
+			preferenceTabs.width = 665;
+			preferenceTabs.height = 425;
+			preferencesWindow.addComponent(preferenceTabs);
+
+			var bgColorPickerBox = new Box();
+			bgColorPickerBox.text = 'Background Color';
+			preferenceTabs.addComponent(bgColorPickerBox);
+
+			var bgColorPicker = new ColorPicker();
+			bgColorPicker.currentColor = bg.color;
+			bgColorPicker.width = preferenceTabs.width - 15;
+			bgColorPicker.height = preferenceTabs.height - 40;
+			bgColorPicker.onChange = ()->{
+				bg.color = bgColorPicker.currentColor;
+				save.data.bgColor = bgColorPicker.currentColor;
+			}
+			bgColorPickerBox.addComponent(bgColorPicker);
+
+		}
+		fileMenu.addComponent(preferencesItem);
+		
+		var separator = new MenuSeparator();
+		fileMenu.addComponent(separator);
 
 		exitItem = new MenuItem();
 		exitItem.text = 'Exit';
 		exitItem.shortcutText = 'Ctrl + Q';
 		exitItem.onClick = () -> {
 			disableAutoPause();
+			PolymodHandler.forceReloadAssets();
 			FlxG.switchState(new MainMenuState());
 		}
 		fileMenu.addComponent(exitItem);
@@ -490,6 +554,8 @@ class CharacterEditorV2 extends MusicBeatState {
 			animationList = new ListView();
 			animationList.onChange = ()->{
 				characterSprite.playAnimation(animationList.selectedItem.text, true);
+				animName.text = animationList.selectedItem.text;
+				// prefix.text = animationList.selectedItem.text;
 			}
 			animationList.width = 215;
 			animationList.height = 200;
@@ -641,7 +707,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		loadCharacter(characterData[0]);
 
 		
-		var fuckYouHaxeUI = new Window();
+		/* var fuckYouHaxeUI = new Window();
 		fuckYouHaxeUI.windowManager = windowManager;
 		fuckYouHaxeUI.title = "Background Color";
 		fuckYouHaxeUI.x = 200;
@@ -649,15 +715,9 @@ class CharacterEditorV2 extends MusicBeatState {
 		fuckYouHaxeUI.maximizable = false;
 		fuckYouHaxeUI.minimizable = false;
 		fuckYouHaxeUI.collapsable = false;
-		var bgColorPicker = new ColorPicker();
-		bgColorPicker.currentColor = bg.color;
-		bgColorPicker.width = 400;
-		bgColorPicker.onChange = ()->{
-			bg.color = bgColorPicker.currentColor;
-		}
 		
 		fuckYouHaxeUI.addComponent(bgColorPicker);
-		add(fuckYouHaxeUI);
+		add(fuckYouHaxeUI); */
 
 	}
 
@@ -684,8 +744,10 @@ class CharacterEditorV2 extends MusicBeatState {
 		ainmNameLabel.marginTop = 6;
 		animNameBox.addComponent(ainmNameLabel);
 
-		var animName = new TextField();
+		// characterSprite.animation.name
+		animName = new TextField();
 		animName.placeholder = "Animation Name";
+		animName.text = characterSprite.animation.name;
 		animName.width =  175;
 		animName.color = 0xFFaaaaaa;
 		animNameBox.addComponent(animName);
@@ -698,10 +760,13 @@ class CharacterEditorV2 extends MusicBeatState {
 		prefixLabel.marginTop = 6;
 		prefixBox.addComponent(prefixLabel);
 
-		var prefix = new TextField();
+		prefix = new TextField();
 		prefix.placeholder = "None";
 		prefix.width =  161;
 		prefix.color = 0xFFaaaaaa;
+		prefix.onChange = ()->{
+			// prefix.text = 'abcd';
+		}
 		prefixBox.addComponent(prefix);
 		
 		indicesBox = new HBox();
@@ -798,14 +863,14 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.update(event);
 		get_conductorInUse().update();
 
-		if (charStepperX != null) { // Bro fuck me.
+		if (charStepperX != null) { // Bro fuck me. - nebula
 			/* curCharacterData.character.offsets[0] = charStepperX.pos;
 			curCharacterData.character.offsets[1] = charStepperY.pos; */
 			/* characterSprite.globalOffsets[0] = curCharacterData.character.offsets[0] != null ? curCharacterData.character.offsets[0] : 0;
 			characterSprite.globalOffsets[1] = curCharacterData.character.offsets[1] != null ? curCharacterData.character.offsets[1] : 0; */
 		}
 
-		// so why does your code not work?
+		// so why does your code not work? - genzu
 
 		for (i in curCharacterData.character.animations) {
 			if (i.name == characterSprite.animation.name) {
