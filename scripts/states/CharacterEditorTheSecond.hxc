@@ -86,6 +86,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	var characterSprite;
 
 	var topBar;
+	var bottomBar;
 	var characterInfoWindow;
 	
 	var renderType;
@@ -167,7 +168,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		characterSprite = CharacterDataParser.fetchCharacter(characterData.id);
 		characterSprite.updateHitbox();
 		characterSprite.screenCenter();
-		characterSprite.playAnimation("idle");
+		// characterSprite.playAnimation("idle");
 		characterSprite.flipX = false;
 		add(characterSprite);
 	}
@@ -189,6 +190,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			character: parseJsonFile("assets/data/characters/bf.json"),
 			polyMeta: null
 		});
+
 		for (i in FileUtil.readDir("mods")) {
 			if (FileUtil.directoryExists("mods/" + i + "/data/characters/")) {
 				for (file in FileUtil.readDir("mods/" + i + "/data/characters/")) {
@@ -228,6 +230,22 @@ class CharacterEditorV2 extends MusicBeatState {
 		topBar.width = FlxG.width;
 		topBar.cameras = [camHUD];
 		add(topBar);
+
+		bottomBar = new MenuBar();
+		bottomBar.y = 676;
+		bottomBar.width = FlxG.width;
+		bottomBar.cameras = [camHUD];
+		add(bottomBar);
+
+		charOffsetXLabel = new Label();
+		charOffsetXLabel.text = 'X:' + null + '|';
+		charOffsetXLabel.fontSize = 30;
+		bottomBar.addComponent(charOffsetXLabel);
+
+		charOffsetYLabel = new Label();
+		charOffsetYLabel.text = 'Y:' + null + '|';
+		charOffsetYLabel.fontSize = 30;
+		bottomBar.addComponent(charOffsetYLabel);
 
 		// -- File Dropdown -- \\
 		fileMenu = new Menu();
@@ -484,12 +502,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		deleteAnimItem.shortcutText = '';
 		deleteAnimItem.color = 0xFFFF0000;
 		deleteAnimItem.onClick = () -> {
-
 			openSound();
-
-			deleteAnimWarningMessage = new Dialog();
-			deleteAnimWarningMessage.title = 'hello world';
-			add(deleteAnimWarningMessage);
 		}
 		editMenu.addComponent(deleteAnimItem);       
 
@@ -795,8 +808,8 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			} */
 		}
-
 	}
+	
 	override function stepHit() {
 		super.stepHit();
 		var curStep = get_conductorInUse().currentStep;
