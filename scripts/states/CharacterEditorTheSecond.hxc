@@ -1283,11 +1283,12 @@ class CharacterEditorV2 extends MusicBeatState {
 				if (animAssetPath != null) {
 					animAssetPath.text = StringTools.replace(curAnim.assetPath, "characters/", "");
 				}
+				// v Fuck ass code is crashing v
 				if (loopCheckBox != null) {
 					if (curAnim.looped == null) {
 						curAnim.looped = false;
 					}
-					loopCheckBox.selected = curAnim.looped;
+					//loopCheckBox.selected = curAnim.looped; 
 				}
 				if (animFlipXCheckBox != null) {
 					//animFlipXCheckBox.selected = curAnim.flipX != null ? curAnim.flipX : false;
