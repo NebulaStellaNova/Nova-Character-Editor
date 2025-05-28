@@ -90,6 +90,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	var indices;
 	var animStepperX;
 	var animStepperY;
+	var charScaleStepper;
 
 	var curAnim;
 
@@ -185,9 +186,14 @@ class CharacterEditorV2 extends MusicBeatState {
 			charFlipXCheckBox.selected = character.flipX != null ? character.flipX : false;
 		}
 
+		if (charScaleStepper != null) {
+			charScaleStepper.pos = curCharacterData.character.scale;
+		}
+
 		if (characterSprite != null) {
 			remove(characterSprite);
 		}
+
 		if (onionSprite != null) {
 			remove(onionSprite);
 		}
@@ -513,6 +519,23 @@ class CharacterEditorV2 extends MusicBeatState {
 			renderType.width = 123;
 			renderTypeBox.addComponent(renderType);
 
+			var charScaleBox = new HBox();
+			characterInfoWindow.addComponent(charScaleBox);
+
+			var charScaleLabel = new Label();
+			charScaleLabel.text = 'Scale:';
+			charScaleLabel.marginTop = 6;
+			charScaleBox.addComponent(charScaleLabel);
+
+			charScaleStepper = new NumberStepper();
+			charScaleStepper.color = 0xFFaaaaaa;
+			charScaleStepper.width = 165;
+			charScaleStepper.pos = curCharacterData.character.scale;
+			charScaleStepper.onChange = ()->{
+				curCharacterData.character.scale = charScaleStepper.pos;
+			}
+			charScaleBox.addComponent(charScaleStepper);
+
 			var singTimeBox = new HBox();
 			characterInfoWindow.addComponent(singTimeBox);
 
@@ -551,6 +574,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			charflipXBox.marginTop = -10;
 			charflipXBox.marginLeft = 30;
 			characterInfoWindow.addComponent(charflipXBox);
+			characterInfoWindow.addComponent(charflipXBox); // Adding twice gives space between
 
 			var charFlipX = new Label();
 			charFlipX.text = 'Flip X:';
@@ -559,8 +583,8 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			charFlipXCheckBox = new CheckBox();
 			charFlipXCheckBox.marginTop = 5;
+			charFlipXCheckBox.color = 0x00aaaaaa;
 			charflipXBox.addComponent(charFlipXCheckBox);
-			characterInfoWindow.addComponent(charflipXBox);
 
 			var charFlipY = new Label();
 			charFlipY.text = 'Flip Y:';
@@ -569,6 +593,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var charFlipYCheckBox = new CheckBox();
 			charFlipYCheckBox.marginTop = 5;
+			charFlipYCheckBox.color = 0x00aaaaaa;	
 			charflipXBox.addComponent(charFlipYCheckBox);
 
 			var splitter = new HorizontalSplitter();
@@ -777,7 +802,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		editAnimWindow.maximizable = false;
 		editAnimWindow.minimizable = false;
 		editAnimWindow.collapsable = false;
-		editAnimWindow.color = 0xFFFFFF00;
+		// editAnimWindow.color = 0xFFFFFF00;
 		editAnimWindow.width = 250;
 		editAnimWindow.height = 270;
 		editAnimWindow.screenCenter();
@@ -798,7 +823,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		animName.placeholder = "Animation Name";
 		animName.text = characterSprite.animation.name;
 		animName.width =  175;
-		animName.color = editAnimWindow.color - 15000;
+		animName.color = 0xFFaaaaaa;
 		animNameBox.addComponent(animName);
 
 		prefixBox = new HBox();
@@ -812,7 +837,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		prefix = new TextField();
 		prefix.placeholder = "None";
 		prefix.width =  161;
-		prefix.color = editAnimWindow.color - 15000;
+		prefix.color = 0xFFaaaaaa;
 		prefix.onChange = ()->{
 			// prefix.text = 'abcd';
 		}
@@ -829,7 +854,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		indices = new TextField();
 		indices.placeholder = "None";
 		indices.width =  154;
-		indices.color = editAnimWindow.color - 15000;
+		indices.color = 0xFFaaaaaa;
 		indicesBox.addComponent(indices);
 
 		animOffsetsBox = new HBox();
@@ -841,13 +866,13 @@ class CharacterEditorV2 extends MusicBeatState {
 		animOffsetsBox.addComponent(aninOffsetLabel);
 
 		animStepperX = new NumberStepper();
-		animStepperX.color = editAnimWindow.color - 15000;
+		animStepperX.color = 0xFFaaaaaa;
 		animStepperX.width = 65;
 		animStepperX.marginLeft = 20;
 		animOffsetsBox.addComponent(animStepperX);
 
 		animStepperY = new NumberStepper();
-		animStepperY.color = editAnimWindow.color - 15000;
+		animStepperY.color = 0xFFaaaaaa;
 		animStepperY.marginLeft = 20;
 		animStepperY.width = 65;
 		animOffsetsBox.addComponent(animStepperY);
@@ -863,7 +888,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		animAssetPath = new TextField();
 		animAssetPath.placeholder = 'None';
 		// assetPath.marginTop = 6;
-		animAssetPath.color = editAnimWindow.color - 15000;
+		animAssetPath.color = 0xFFaaaaaa;
 		animAssetPath.width = 135;
 		animAssetPathBoxBox.addComponent(animAssetPath);
 
@@ -879,7 +904,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		var animFlipXCheckBox = new CheckBox();
 		animFlipXCheckBox.marginTop = 5;
-		animFlipXCheckBox.color = editAnimWindow.color - 15000;
+		animFlipXCheckBox.color = 0xFFaaaaaa;
 		animflipXBox.addComponent(animFlipXCheckBox);
 
 		var animFlipY = new Label();
@@ -889,6 +914,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		var animFlipYCheckBox = new CheckBox();
 		animFlipYCheckBox.marginTop = 5;
+		animFlipYCheckBox.color = 0xFFaaaaaa;
 		animflipXBox.addComponent(animFlipYCheckBox);
 
 		var loopBox = new HBox();
@@ -902,6 +928,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		var loopCheckBox = new CheckBox();
 		loopCheckBox.marginTop = 6;
+		loopCheckBox.color = 0xFFaaaaaa;
 		loopBox.addComponent(loopCheckBox);
 	}
 
@@ -996,7 +1023,14 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				onionSprite.animationOffsets[i.name][0] = i.offsets[0];
 				onionSprite.animationOffsets[i.name][1] = i.offsets[1];
+				
 			}
+		}
+
+		if (characterSprite != null) {
+			characterSprite.scale.set(curCharacterData.character.scale, curCharacterData.character.scale);
+			onionSprite.scale.set(curCharacterData.character.scale, curCharacterData.character.scale);
+			// n-word - genzu
 		}
 
 		if (FlxG.keys.justPressed.SPACE) {
@@ -1017,7 +1051,6 @@ class CharacterEditorV2 extends MusicBeatState {
 			cameraTarget.x += shiftAmount;
 		}
 
-		
 		var directionKeys = [
 			FlxG.keys.justPressed.J,
 			FlxG.keys.justPressed.K,
