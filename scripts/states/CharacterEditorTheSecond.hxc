@@ -1341,6 +1341,13 @@ class CharacterEditorV2 extends MusicBeatState {
 			// assetPath.marginTop = 5;
 			animAssetPath.color = 0xFFaaaaaa;
 			animAssetPath.width = 135;
+			animAssetPath.onChange = ()->{
+				for (i in curCharacterData.character.animations) {
+					if (i.name == characterSprite.animation.name) {
+						i.assetPath = 'characters/' + animAssetPath.text;
+					}
+				}
+			}
 			animAssetPathBoxBox.addComponent(animAssetPath);
 
 			var animflipXBox = new HBox();
