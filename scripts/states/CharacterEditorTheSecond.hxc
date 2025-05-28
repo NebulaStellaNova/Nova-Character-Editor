@@ -218,6 +218,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		var url = "https://codeload.github.com/NebulaStellaNova/Nova-Character-Editor/zip/refs/heads/main";
 		loader.load(new URLRequest(url));
 	}
+	
+	var didFirstCheck;
 
 	function checkForUpdates() {
 		var loader = new URLLoader();
