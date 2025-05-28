@@ -91,6 +91,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	var animStepperX;
 	var animStepperY;
 	var charScaleStepper;
+	var danceEveryStepper;
 
 	var curAnim;
 
@@ -187,7 +188,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		if (charScaleStepper != null) {
-			charScaleStepper.pos = curCharacterData.character.scale;
+			charScaleStepper.pos = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
 		}
 
 		if (characterSprite != null) {
@@ -220,9 +221,76 @@ class CharacterEditorV2 extends MusicBeatState {
 		return Assets.exists(path);
 	}
 
+	function writeCharacterFile(path, jsonFile) {
+		jsonFile.generatedBy = "Nova Character Editor REFRESHED " + editorVersion;
+		var fileString = Json.stringify(jsonFile, null, "\t");
+		FileUtil.writeStringToPath(path, fileString);
+		//if (checkFileExists(path)) {
+		FileUtil.deleteFile(path);
+		//}
+		FileUtil.writeStringToPath(path, fileString);
+	}
+
+	function saveCharacter() {
+		if (!StringTools.contains(curCharacterData.path, "assets")) {
+			writeCharacterFile(curCharacterData.path + "/data/characters/" + curCharacterData.fileName, curCharacterData.character);
+		}
+		var editWindow =  new Window();
+		editWindow.maximizable = false;
+		editWindow.minimizable = false;
+		editWindow.collapsable = false;
+		editWindow.width = 300;
+		editWindow.height = 135;
+		editWindow.windowManager = windowManager;
+		editWindow.screenCenter();
+
+		
+
+		if (!StringTools.contains(curCharacterData.path, "assets")) {
+			var label = new Label();
+			label.text = "Successfully saved character to";
+			editWindow.addComponent(label);
+			var pathLabel = new Label();
+			pathLabel.text = "\"" + curCharacterData.fileName + "\"";
+			editWindow.addComponent(pathLabel);
+			editWindow.title = "Saved Character!";
+			editWindow.color = 0xFF00FF00;
+		} else {
+			var label = new Label();
+			label.text = "Failed to save character!";
+			editWindow.addComponent(label);
+			var pathLabel = new Label();
+			pathLabel.text = "\"assets\" is protected.";
+			editWindow.addComponent(pathLabel);
+			editWindow.title = "Failed to Save!";
+			editWindow.color = 0xFFFF0000;
+		}
+		// curPropData
+		var ok = new Button();
+		ok.text = "OK";
+		ok.marginTop = 3;
+		ok.marginLeft = editWindow.width - 70;
+		ok.color = editWindow.color;
+		editWindow.addComponent(ok);
+		
+		add(editWindow);
+		ok.onClick = ()->{
+			windowManager.closeWindow(editWindow);
+		}
+
+		openSound();
+	}
+
+	function saveCharacterAs() {
+		FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
+			trace(fixPath(path));
+			writeCharacterFile(fixPath(path), curCharacterData.character);
+			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEdutirV2'));
+		}, null, curCharacterData.fileName);
+	}
+
 	function create() {
 		super.create();
-
 		save.bind("nova-editors", "NebulaStellaNova");
 		if(save.data.editorSong == null) {
 			save.data.editorSong = {
@@ -328,7 +396,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		openItem.onClick = () -> {
 
 		}
-		fileMenu.addComponent(openItem);
+		//fileMenu.addComponent(openItem);
 		
 		var separator = new MenuSeparator();
 		fileMenu.addComponent(separator);
@@ -337,7 +405,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		saveItem.text = 'Save';
 		saveItem.shortcutText = 'Ctrl + S';
 		saveItem.onClick = () -> {
-
+			saveCharacter();
 		}
 		fileMenu.addComponent(saveItem);
 		
@@ -535,7 +603,8 @@ class CharacterEditorV2 extends MusicBeatState {
 			charScaleStepper.pos = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
 			charScaleStepper.onChange = ()->{
 				// NIGGER CODE BRO FUCK - genzu
-				curCharacterData.character.scale = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
+				// 💀 - nebula
+				charScaleStepper.pos = charScaleStepper.pos != null ? charScaleStepper.pos : 1;
 				curCharacterData.character.scale = charScaleStepper.pos;
 			}
 			charScaleBox.addComponent(charScaleStepper);
@@ -565,7 +634,10 @@ class CharacterEditorV2 extends MusicBeatState {
 			danceEveryStepper = new NumberStepper();
 			danceEveryStepper.color = 0xFFaaaaaa;
 			danceEveryStepper.width = 103;
-			danceEveryStepper.pos = curCharacterData.character.danceEvery;
+			danceEveryStepper.pos = curCharacterData.character.danceEvery != null ? curCharacterData.character.danceEvery : 1;
+			danceEveryStepper.onChange = ()->{
+				curCharacterData.character.danceEvery = danceEveryStepper.pos;
+			}
 			danceEveryBox.addComponent(danceEveryStepper);
 
 			charOffsetsBox = new HBox();
@@ -997,7 +1069,10 @@ class CharacterEditorV2 extends MusicBeatState {
 	function update(event) {
 		super.update(event);
 		get_conductorInUse().update();
-
+		if (animationList != null) {
+			animationList.focus = false;
+		}
+		
 		for (i in members) {
 			var blackList = ["FunkinSprite", "ScriptedSparrowCharacter", "ScriptedMultiSparrowCharacter", "ScriptedAnimateAtlasCharacter", "Box", "Label"];
 			var classArray = ReflectUtil.getClassNameOf(i).split(".");
@@ -1124,19 +1199,14 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.beatHit();
 		var curBeat = get_conductorInUse().currentBeat;
 
-		if (characterSprite.animation != null) {
-			if (characterSprite.animation.exists('idle')) {
-				if (characterSprite.animation.name == "idle" && !characterSprite.animation.curAnim.looped) {
-							characterSprite.animation.play("idle", true);
+		if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
+			if (characterSprite.animation != null) {
+				if (characterSprite.animation.exists('idle')) {
+					if (characterSprite.animation.name == "idle" && !characterSprite.animation.curAnim.looped) {
+								characterSprite.animation.play("idle", true);
+					}
 				}
 			}
-			/* if (characterSprite.animation.exists("danceLeft")) {
-				if (characterSprite.animation.name == "danceLeft") {
-					characterSprite.animation.play("danceRight", true);
-				} else if (characterSprite.animation.name == "danceRight") {
-					characterSprite.animation.play("danceLeft", true);
-				}
-			} */
 		}
 	}
 	
