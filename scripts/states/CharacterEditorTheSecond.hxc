@@ -1028,8 +1028,9 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		if (characterSprite != null) {
-			characterSprite.scale.set(curCharacterData.character.scale, curCharacterData.character.scale);
-			onionSprite.scale.set(curCharacterData.character.scale, curCharacterData.character.scale);
+			var daScale = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
+			characterSprite.scale.set(daScale, daScale);
+			onionSprite.scale.set(daScale, daScale);
 			// n-word - genzu
 		}
 
