@@ -31,6 +31,7 @@ import haxe.ui.core.Component;
 import haxe.ui.core.TextDisplay;
 
 import haxe.ui.components.Label;
+import haxe.ui.components.Image;
 import haxe.ui.components.Button;
 import haxe.ui.components.TabBar;
 import haxe.ui.components.Column;
@@ -112,6 +113,9 @@ class CharacterEditorV2 extends MusicBeatState {
 	var animStepperY;
 	var charScaleStepper;
 	var danceEveryStepper;
+	var idTextField;
+	var isPixelCheckbox;
+	var iconPreview;
 
 	var curAnim;
 
@@ -218,7 +222,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		var url = "https://codeload.github.com/NebulaStellaNova/Nova-Character-Editor/zip/refs/heads/main";
 		loader.load(new URLRequest(url));
 	}
-	
+
 	var didFirstCheck;
 
 	function checkForUpdates() {
@@ -249,6 +253,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var updateButton = new Button();
 				updateButton.text = "Open GameBanana";
+				updateButton.color = 0xFFaaaaaa;
 				updateButton.marginTop = 5;
 				updateButton.onClick = ()->{
 					debugPrint("Uh! Ooooh... No GameBanana For Youuuuu.");
@@ -260,6 +265,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				var downloadButton = new Button();
 				downloadButton.text = "Download/Install Update";
 				downloadButton.marginTop = 5;
+				downloadButton.color = 0xFFaaaaaa;
 				downloadButton.onClick = ()->{
 					downloadLatestVersion();
 				}
@@ -267,6 +273,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var closeButton = new Button();
 				closeButton.text = "Close";
+				closeButton.color = 0xFFaaaaaa;
 				closeButton.marginTop = 3;
 				closeButton.marginLeft = updateWindow.width - 90;
 				updateWindow.addComponent(closeButton);
@@ -297,6 +304,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				closeButton.text = "Close";
 				closeButton.marginTop = 3;
 				closeButton.marginLeft = updateWindow.width - 90;
+				closeButton.color = 0xFFaaaaaa;
 				updateWindow.addComponent(closeButton);
 
 				updateWindow.screenCenter();
@@ -361,6 +369,13 @@ class CharacterEditorV2 extends MusicBeatState {
 			charScaleStepper.pos = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
 		}
 
+		if (charStepperX != null) {
+			charStepperX.pos = curCharacterData.character.offsets != null ? curCharacterData.character.offsets[0] : 0;
+		}
+		if (charStepperY != null) {
+			charStepperY.pos = curCharacterData.character.offsets != null ? curCharacterData.character.offsets[1] : 0;
+		}
+
 		if (characterSprite != null) {
 			remove(characterSprite);
 		}
@@ -385,6 +400,16 @@ class CharacterEditorV2 extends MusicBeatState {
 		// characterSprite.playAnimation("idle");
 		characterSprite.flipX = false;
 		add(characterSprite);
+
+		if (idTextField != null) {
+			idTextField.text = characterSprite.getHealthIconId();
+		}
+
+		if (isPixelCheckbox != null) {
+			isPixelCheckbox.selected = curCharacterData.character.healthIcon != null ? (curCharacterData.character.healthIcon.isPixel != null ? curCharacterData.character.healthIcon.isPixel : false) : false;
+		}
+
+		resetCamera();
 	}
 
 	function checkFileExists(path:String) {
@@ -710,9 +735,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		resetCameraItem.text = 'Reset Camera';
 		resetCameraItem.shortcutText = '';
 		resetCameraItem.onClick = () -> {
-			cameraTarget.zoom = 0.7;
-			cameraTarget.x = 0;
-			cameraTarget.y = 0;
+			resetCamera();
 		}
 		toolsMenu.addComponent(resetCameraItem);
 
@@ -777,9 +800,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		checkForUpdateItem = new MenuItem();
 		checkForUpdateItem.text = 'Check for Updates';
 		checkForUpdateItem.shortcutText = 'Ctrl + U';
-		checkForUpdateItem.onClick = () -> {
-
-		}
+		checkForUpdateItem.onClick = checkForUpdates;
 		helpItem.addComponent(checkForUpdateItem);
 
 		var watermark = new Label();
@@ -810,6 +831,12 @@ class CharacterEditorV2 extends MusicBeatState {
 		checkForUpdates();
 	}
 
+	function resetCamera() {
+		cameraTarget.zoom = 0.7;
+		cameraTarget.x = (FlxG.width/3)-(characterSprite.width/4)+40;
+		cameraTarget.y = 0;
+	}
+
 	var iconWindow;
 
 	function iconInfowWindow() {
@@ -822,7 +849,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			iconWindow.minimizable = false;
 			iconWindow.collapsable = false;
 			iconWindow.width = 250;
-			iconWindow.height = 200;
+			iconWindow.height = 220;
 			iconWindow.x = characterInfoWindow.x - editAnimWindow.width - 5;
 			iconWindow.y = 320;
 			add(iconWindow);
@@ -838,10 +865,55 @@ class CharacterEditorV2 extends MusicBeatState {
 			idTextField = new TextField();
 			idTextField.placeholder = 'Icon Name';
 			idTextField.color = 0x00aaaaaa;
-			idTextField.text = curCharacterData.character.healthIcon != null ? curCharacterData.character.healthIcon.id : 'face';
-			trace(curCharacterData.character.healthIcon);
+			idTextField.text = characterSprite.getHealthIconId();
+			idTextField.onChange = ()->{
+				if (curCharacterData.character.healthIcon == null) {
+					curCharacterData.character.healthIcon = {
+						id: idTextField.text,
+						isPixel: false
+					}
+				}
+				curCharacterData.character.healthIcon.id = idTextField.text;
+				if (checkFileExists(Paths.image("icons/icon-" + idTextField.text))) {
+					iconPreview.set_value(Paths.image("icons/icon-" + idTextField.text));
+					idTextField.color = 0x00aaaaaa;
+				} else {
+					iconPreview.set_value(Paths.image("icons/icon-face"));
+					idTextField.color = 0xFFFF0000;
+				}
+			}
 			idBox.addComponent(idTextField);
 
+			var isPixelBox = new HBox();
+			iconWindow.addComponent(isPixelBox);
+
+			var isPixelLabel = new Label();
+			isPixelLabel.text = "Pixel:"; // first trey - nucelk
+			isPixelBox.addComponent(isPixelLabel);
+
+			isPixelCheckbox = new CheckBox();
+			isPixelCheckbox.selected = curCharacterData.character.healthIcon != null ? (curCharacterData.character.healthIcon.isPixel != null ? curCharacterData.character.healthIcon.isPixel : false) : false;
+			isPixelCheckbox.color = 0xFFaaaaaa;			
+			isPixelCheckbox.onChange = ()->{
+				if (curCharacterData.character.healthIcon == null) {
+					curCharacterData.character.healthIcon = {
+						id: idTextField.text,
+						isPixel: false
+					}
+				}
+				curCharacterData.character.healthIcon.isPixel = isPixelCheckbox.selected;
+			}
+			isPixelBox.addComponent(isPixelCheckbox);
+
+			var iconBox = new Box();
+			iconBox.color = 0xFFaaaaaa;
+			iconWindow.addComponent(iconBox);
+
+			iconPreview = new Image();
+			iconPreview.set_value(Paths.image("icons/icon-bf"));
+			iconPreview.width = 300/1.4;
+			iconPreview.height = 150/1.4;
+			iconBox.addComponent(iconPreview);
 			openSound();
 			
 		} else {
@@ -873,6 +945,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterList.text = "Pick Character";
 			characterList.searchable = true;
 			characterList.width = 215;
+			characterList.color = 0xFFaaaaaa;
 			for (i in characterData) {
 				characterList.dataSource.add({text: i.character.name});
 			}
@@ -1043,7 +1116,12 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			animationList = new ListView();
 			animationList.onChange = ()->{
-				characterSprite.playAnimation(animationList.selectedItem.text, true);
+				if (FlxG.keys.pressed.CONTROL) {
+					onionSprite.playAnimation(animationList.selectedItem.text, true);
+					characterSprite.playAnimation(animationList.selectedItem.text, true);
+				} else {
+					characterSprite.playAnimation(animationList.selectedItem.text, true);
+				}
 				var curAnim;
 				for (i in curCharacterData.character.animations) {
 					if (i.name == animationList.selectedItem.text) {
@@ -1079,6 +1157,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			animEditButton.text = 'Edit Animation';
 			animEditButton.marginTop = 5;
 			animEditButton.width = 215;
+			animEditButton.color = 0xFFaaaaaa;
 			animEditButton.onClick = ()->{
 				openSound();
 				openAnimEditWindow();
@@ -1092,12 +1171,22 @@ class CharacterEditorV2 extends MusicBeatState {
 			createAnimButton.width = 105;
 			createAnimButton.marginTop = 5;
 			createAnimButton.text = 'New Anim';
+			createAnimButton.color = 0xFFaaaaaa;
 			createDeleteButtonBox.addComponent(createAnimButton);
 	
 			var deleteAnimButton = new Button();
 			deleteAnimButton.width = 105;
 			deleteAnimButton.marginTop = 5;
 			deleteAnimButton.text = 'Delete Anim';
+			deleteAnimButton.color = 0xFFaaaaaa;
+			deleteAnimButton.onClick = ()->{
+				for (anim in curCharacterData.character.animations) {
+					if (anim.name == characterSprite.animation.name) {
+						curCharacterData.character.animations.remove(anim);
+						reloadAnimationList();
+					}
+				}
+			}
 			createDeleteButtonBox.addComponent(deleteAnimButton);
 	
 			reloadAnimationList();
@@ -1199,12 +1288,26 @@ class CharacterEditorV2 extends MusicBeatState {
 			animStepperX.color = 0xFFaaaaaa;
 			animStepperX.width = 65;
 			animStepperX.marginLeft = 20;
+			animStepperX.onChange = ()->{
+				for (i in curCharacterData.character.animations) {
+					if (i.name == characterSprite.animation.name) {
+						i.offsets[0] = animStepperX.pos;
+					}
+				}
+			}
 			animOffsetsBox.addComponent(animStepperX);
 
 			animStepperY = new NumberStepper();
 			animStepperY.color = 0xFFaaaaaa;
 			animStepperY.marginLeft = 20;
 			animStepperY.width = 65;
+			animStepperY.onChange = ()->{
+				for (i in curCharacterData.character.animations) {
+					if (i.name == characterSprite.animation.name) {
+						i.offsets[1] = animStepperY.pos;
+					}
+				}
+			}
 			animOffsetsBox.addComponent(animStepperY);
 
 			var animAssetPathBoxBox = new HBox();
@@ -1529,9 +1632,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				FlxG.switchState(new MainMenuState());
 			}
 			if (FlxG.keys.justPressed.R && FlxG.keys.pressed.SHIFT) {
-				cameraTarget.zoom = 0.7;
-				cameraTarget.x = 0;
-				cameraTarget.y = 0;
+				resetCamera();
 			}
 		}
 
@@ -1595,7 +1696,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		if (curCharacterData.character.healthIcon != null) {
-			idTextField.text = characterSprite.getHealthIconId();
+			//idTextField.text = characterSprite.getHealthIconId();
 			// erm idk lmao
 		}
 
@@ -1634,7 +1735,15 @@ class CharacterEditorV2 extends MusicBeatState {
 		var index = 0;
 		for (i in directionKeys) {
 			if (i) {
-				characterSprite.playAnimation(directionAnims[index] + (FlxG.keys.pressed.SHIFT ? "-alt" : ""), true);
+				for (dir in curCharacterData.character.animations) {
+					if (dir.name == directionAnims[index]) {
+						if (FlxG.keys.pressed.CONTROL) {
+							onionSprite.playAnimation(directionAnims[index] + (FlxG.keys.pressed.SHIFT ? "-alt" : ""), true);
+						} else {
+							characterSprite.playAnimation(directionAnims[index] + (FlxG.keys.pressed.SHIFT ? "-alt" : ""), true);
+						}
+					}
+				}
 			}
 			index++;
 		}
@@ -1687,7 +1796,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
 			if (characterSprite.animation != null) {
-				if (characterSprite.animation.exists('idle')) {
+				if (characterSprite.animation.exists('idle') && curCharacterData.character.animations["idle"].name == "idle") {
 					if (characterSprite.animation.name == "idle" && !characterSprite.animation.curAnim.looped) {
 								characterSprite.animation.play("idle", true);
 					}

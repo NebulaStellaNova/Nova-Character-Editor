@@ -47,7 +47,7 @@ class NovaConverters extends Module {
         baseTemplate.healthIcon = {
             id: charData.exists("icon") ? charData.get("icon") : ""
         }
-        baseTemplate.flipX = charData.exists("flipX") ? parseBool(charData.get("flipX")) : 0;
+        baseTemplate.flipX = charData.exists("flipX") ? parseBool(charData.get("flipX")) : false;
 
         for (i in charData.iterator()) {
             if (i.nodeType+"" == "0") {
