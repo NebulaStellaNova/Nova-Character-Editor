@@ -116,6 +116,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	var idTextField;
 	var isPixelCheckbox;
 	var iconPreview;
+	var animAssetPath;
 
 	var curAnim;
 
@@ -354,7 +355,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		if (assetPath != null){
 			assetPath.text = StringTools.replace(character.assetPath, "characters/", "");
 		}
-
+		
+		if (animAssetPath != null){
+			animAssetPath.text = StringTools.replace(curAnim.assetPath, "characters/", "");
+		}
+		
 		character.renderType = character.renderType != null ? character.renderType : "sparrow";
 		
 		if (renderType != null) {
@@ -383,7 +388,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		if (onionSprite != null) {
 			remove(onionSprite);
 		}
-		
+
 		trace(characterData.id);
 		
 		onionSprite = CharacterDataParser.fetchCharacter(characterData.id);
@@ -1206,6 +1211,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				curAnim = i;
 			}
 		}
+		// dumb ahh code above fr - genzu
 		
 		if (editAnimWindow == null || !editAnimWindow.visible) {
 
@@ -1253,8 +1259,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			prefix.placeholder = "None";
 			prefix.width =  161;
 			prefix.color = 0xFFaaaaaa;
+			prefix.text = curAnim.prefix;
 			prefix.onChange = ()->{
-				// prefix.text = 'abcd';
+
 			}
 			prefixBox.addComponent(prefix);
 			
@@ -1442,7 +1449,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			
 			keybindText.dataSource.add( {text: "Show User Guide                 F1"} );
 			//keybindText.dataSource.add( {text: "Open Stage                      Ctrl + O"} );
-			keybindText.dataSource.add( {text: "New Stage                       Ctrl + N"} );
+			keybindText.dataSource.add( {text: "New Character                   Ctrl + N"} );
 			keybindText.dataSource.add( {text: "Save                            Ctrl + S"} );
 			keybindText.dataSource.add( {text: "Save As                         Ctrl + Shift + S"} );
 			//keybindText.dataSource.add( {text: "Reset Camera Position           Ctrl + R"} );
