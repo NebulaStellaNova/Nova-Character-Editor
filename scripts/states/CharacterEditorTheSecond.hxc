@@ -109,7 +109,6 @@ class CharacterEditorV2 extends MusicBeatState {
 	var characterInfoWindow;
 
 	var uiColor = 0xFFFFFFFF;
-	var buttonColor = 0xFFFF0000;
 
 	var save = new FlxSave();
 	
@@ -710,13 +709,13 @@ class CharacterEditorV2 extends MusicBeatState {
 					prefix.text = curAnim.prefix;
 				}
 				if (indices != null) {
-					indices.text = curAnim.indices;
+					//indices.text = curAnim.indices;
 				}
 				if (animStepperX != null) {
-					animStepperX.pos = curAnim.offsets[0];
+					animStepperX.pos = curAnim.offsets != null ? curAnim.offsets[0] : 0;
 				}
 				if (animStepperY != null) {
-					animStepperY.pos = curAnim.offsets[1];
+					animStepperY.pos = curAnim.offsets != null ? curAnim.offsets[1] : 0;
 				}
 				// prefix.text = animationList.selectedItem.text;
 			}
@@ -942,9 +941,19 @@ class CharacterEditorV2 extends MusicBeatState {
 		indicesBox.addComponent(indicesLabel);
 
 		indices = new TextField();
-		indices.placeholder = "None";
+		indices.placeholder = "Coming Soon";
 		indices.width =  154;
 		indices.color = 0xFFaaaaaa;
+		indices.onChange = ()->{
+			/* if (indices.text != "") {
+				curAnim.indices = [];
+				for (i in indices.text.split(",")) {
+					curAnim.indices.push(Std.parseInt(i));
+				}
+			} else {
+				curAnim.frameIndices = null;
+			} */
+		}
 		indicesBox.addComponent(indices);
 
 		animOffsetsBox = new HBox();
