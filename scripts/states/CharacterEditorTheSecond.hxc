@@ -244,7 +244,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var nameLabel = new Label();
 				nameLabel.text = "New Version: " + cloudVersion + "\nCurrent Version: " + editorVersion;
-				nameLabel.marginTop = 6;
+				nameLabel.marginTop = 5;
 				updateWindow.addComponent(nameLabel);
 
 				var updateButton = new Button();
@@ -290,7 +290,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var nameLabel = new Label();
 				nameLabel.text = "Your Editor is Up To Date!";
-				nameLabel.marginTop = 6;
+				nameLabel.marginTop = 5;
 				updateWindow.addComponent(nameLabel);
 
 				var closeButton = new Button();
@@ -668,7 +668,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		iconPropertiesItem.text = 'Icon Info';
 		iconPropertiesItem.shortcutText = '';
 		iconPropertiesItem.onClick = () -> {
-
+			iconInfowWindow();
 		}
 		editMenu.addComponent(iconPropertiesItem);
 
@@ -676,7 +676,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		charPropertiesItem.text = 'Character Info';
 		charPropertiesItem.shortcutText = '';
 		charPropertiesItem.onClick = () -> {
-			fuckGenzu();
+			fuckNebula();
 		}
 		editMenu.addComponent(charPropertiesItem);
 
@@ -803,13 +803,54 @@ class CharacterEditorV2 extends MusicBeatState {
 		
 		fuckYouHaxeUI.addComponent(bgColorPicker);
 		add(fuckYouHaxeUI); */
-		fuckGenzu();
-		openAnimEditWindow();
 
+		fuckNebula();
+		openAnimEditWindow();
+		iconInfowWindow();
 		checkForUpdates();
 	}
 
-	function fuckGenzu() {
+	var iconWindow;
+
+	function iconInfowWindow() {
+		if (iconWindow == null || !iconWindow.visible) {
+			iconWindow = new Window();
+			iconWindow.windowManager = windowManager;
+			iconWindow.title = 'Icon Info';
+			iconWindow.cameras = [camHUD];
+			iconWindow.maximizable = false;
+			iconWindow.minimizable = false;
+			iconWindow.collapsable = false;
+			iconWindow.width = 250;
+			iconWindow.height = 200;
+			iconWindow.x = characterInfoWindow.x - editAnimWindow.width - 5;
+			iconWindow.y = 320;
+			add(iconWindow);
+			
+			var idBox = new HBox();
+			iconWindow.addComponent(idBox);
+
+			var idLable = new Label();
+			idLable.text = 'Icon:';
+			idLable.marginTop = 5;
+			idBox.addComponent(idLable);
+
+			idTextField = new TextField();
+			idTextField.placeholder = 'Icon Name';
+			idTextField.color = 0x00aaaaaa;
+			idTextField.text = curCharacterData.character.healthIcon != null ? curCharacterData.character.healthIcon.id : 'face';
+			trace(curCharacterData.character.healthIcon);
+			idBox.addComponent(idTextField);
+
+			openSound();
+			
+		} else {
+			windowManager.closeWindow(iconWindow);
+		}
+	}
+
+
+	function fuckNebula() {
 		if (characterInfoWindow == null || !characterInfoWindow.visible) {
 
 			openSound();
@@ -851,7 +892,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			characterNameLabel = new Label();
 			characterNameLabel.text = 'Name:';
-			characterNameLabel.marginTop = 6;
+			characterNameLabel.marginTop = 5;
 			nameBox.addComponent(characterNameLabel);
 	
 			charName = new TextField();
@@ -866,13 +907,13 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var assetPathLabel = new Label();
 			assetPathLabel.text = 'Asset Path:';
-			assetPathLabel.marginTop = 6;
+			assetPathLabel.marginTop = 5;
 			assetPathBoxBox.addComponent(assetPathLabel);
 	
 			assetPath = new TextField();
 			assetPath.placeholder = '';
 			assetPath.text = StringTools.replace(curCharacterData.character.assetPath, "characters/", "");
-			// assetPath.marginTop = 6;
+			// assetPath.marginTop = 5;
 			assetPath.color = 0xFFaaaaaa;
 			assetPath.width = 130;
 			assetPathBoxBox.addComponent(assetPath);
@@ -882,13 +923,13 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var renderTypeLabel = new Label();
 			renderTypeLabel.text = 'Render Type:';
-			renderTypeLabel.marginTop = 6;
+			renderTypeLabel.marginTop = 5;
 			renderTypeBox.addComponent(renderTypeLabel);
 	
 			renderType = new TextField();
 			renderType.placeholder = 'sparrow';
 			renderType.text = curCharacterData.character.renderType != null ? curCharacterData.character.renderType : "sparrow";
-			// assetPath.marginTop = 6;
+			// assetPath.marginTop = 5;
 			renderType.color = 0xFFaaaaaa;
 			renderType.width = 123;
 			renderTypeBox.addComponent(renderType);
@@ -898,7 +939,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var charScaleLabel = new Label();
 			charScaleLabel.text = 'Scale:';
-			charScaleLabel.marginTop = 6;
+			charScaleLabel.marginTop = 5;
 			charScaleBox.addComponent(charScaleLabel);
 	
 			charScaleStepper = new NumberStepper();
@@ -920,7 +961,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var singTimeLabel = new Label();
 			singTimeLabel.text = 'Sing Time:';
-			singTimeLabel.marginTop = 6;
+			singTimeLabel.marginTop = 5;
 			singTimeBox.addComponent(singTimeLabel);
 	
 			singTimeStepper = new NumberStepper();
@@ -934,7 +975,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var danceEveryLabel = new Label();
 			danceEveryLabel.text = 'Dance Interval:';
-			danceEveryLabel.marginTop = 6;
+			danceEveryLabel.marginTop = 5;
 			danceEveryBox.addComponent(danceEveryLabel);
 	
 			danceEveryStepper = new NumberStepper();
@@ -951,7 +992,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var charOffsetLabel = new Label();
 			charOffsetLabel.text = 'Offsets:';
-			charOffsetLabel.marginTop = 6;
+			charOffsetLabel.marginTop = 5;
 			charOffsetsBox.addComponent(charOffsetLabel);
 	
 			charStepperX = new NumberStepper();
@@ -974,7 +1015,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var charFlipX = new Label();
 			charFlipX.text = 'Flip X:';
-			charFlipX.marginTop = 6;
+			charFlipX.marginTop = 5;
 			charflipXBox.addComponent(charFlipX);
 	
 			charFlipXCheckBox = new CheckBox();
@@ -984,7 +1025,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var charFlipY = new Label();
 			charFlipY.text = 'Flip Y:';
-			charFlipY.marginTop = 6;
+			charFlipY.marginTop = 5;
 			charflipXBox.addComponent(charFlipY);
 	
 			var charFlipYCheckBox = new CheckBox();
@@ -1028,7 +1069,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			}
 			animationList.width = 215;
 			animationList.height = 175;
-			animationList.marginTop = 6;
+			animationList.marginTop = 5;
 			characterInfoWindow.addComponent(animationList);
 	
 			var editButtonBox = new HBox();
@@ -1036,7 +1077,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			
 			var animEditButton = new Button();
 			animEditButton.text = 'Edit Animation';
-			animEditButton.marginTop = 6;
+			animEditButton.marginTop = 5;
 			animEditButton.width = 215;
 			animEditButton.onClick = ()->{
 				openSound();
@@ -1049,13 +1090,13 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 			var createAnimButton = new Button();
 			createAnimButton.width = 105;
-			createAnimButton.marginTop = 6;
+			createAnimButton.marginTop = 5;
 			createAnimButton.text = 'New Anim';
 			createDeleteButtonBox.addComponent(createAnimButton);
 	
 			var deleteAnimButton = new Button();
 			deleteAnimButton.width = 105;
-			deleteAnimButton.marginTop = 6;
+			deleteAnimButton.marginTop = 5;
 			deleteAnimButton.text = 'Delete Anim';
 			createDeleteButtonBox.addComponent(deleteAnimButton);
 	
@@ -1094,7 +1135,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var ainmNameLabel = new Label();
 			ainmNameLabel.text = 'Name:';
-			ainmNameLabel.marginTop = 6;
+			ainmNameLabel.marginTop = 5;
 			animNameBox.addComponent(ainmNameLabel);
 
 			// characterSprite.animation.name
@@ -1110,7 +1151,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var prefixLabel = new Label();
 			prefixLabel.text = 'Prefix:';
-			prefixLabel.marginTop = 6;
+			prefixLabel.marginTop = 5;
 			prefixBox.addComponent(prefixLabel);
 
 			prefix = new TextField();
@@ -1127,7 +1168,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var indicesLabel = new Label();
 			indicesLabel.text = 'Indices:';
-			indicesLabel.marginTop = 6;
+			indicesLabel.marginTop = 5;
 			indicesBox.addComponent(indicesLabel);
 
 			indices = new TextField();
@@ -1151,7 +1192,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var aninOffsetLabel = new Label();
 			aninOffsetLabel.text = 'Offsets:';
-			aninOffsetLabel.marginTop = 6;
+			aninOffsetLabel.marginTop = 5;
 			animOffsetsBox.addComponent(aninOffsetLabel);
 
 			animStepperX = new NumberStepper();
@@ -1171,12 +1212,12 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var animAssetPathLabel = new Label();
 			animAssetPathLabel.text = 'Asset Path:';
-			animAssetPathLabel.marginTop = 6;
+			animAssetPathLabel.marginTop = 5;
 			animAssetPathBoxBox.addComponent(animAssetPathLabel);
 
 			animAssetPath = new TextField();
 			animAssetPath.placeholder = 'None';
-			// assetPath.marginTop = 6;
+			// assetPath.marginTop = 5;
 			animAssetPath.color = 0xFFaaaaaa;
 			animAssetPath.width = 135;
 			animAssetPathBoxBox.addComponent(animAssetPath);
@@ -1188,7 +1229,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var animFlipX = new Label();
 			animFlipX.text = 'Flip X:';
-			animFlipX.marginTop = 6;
+			animFlipX.marginTop = 5;
 			animflipXBox.addComponent(animFlipX);
 
 			var animFlipXCheckBox = new CheckBox();
@@ -1198,7 +1239,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var animFlipY = new Label();
 			animFlipY.text = 'Flip Y:';
-			animFlipY.marginTop = 6;
+			animFlipY.marginTop = 5;
 			animflipXBox.addComponent(animFlipY);
 
 			var animFlipYCheckBox = new CheckBox();
@@ -1212,11 +1253,11 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var loopLabel = new Label();
 			loopLabel.text = 'Looped:';
-			loopLabel.marginTop = 6;
+			loopLabel.marginTop = 5;
 			loopBox.addComponent(loopLabel);
 
 			var loopCheckBox = new CheckBox();
-			loopCheckBox.marginTop = 6;
+			loopCheckBox.marginTop = 5;
 			loopCheckBox.color = 0xFFaaaaaa;
 			loopBox.addComponent(loopCheckBox);
 		} else {
@@ -1299,7 +1340,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			keybindText.dataSource.add( {text: "Check For Updates               Ctrl + U"} );
 			keybindText.dataSource.add( {text: "Reset Camera Zoom               Ctrl + Shift + R"} );
 			//keybindText.dataSource.add( {text: "Create/Add Prop                 Ctrl + A"} );
-			keybindText.dataSource.add( {text: "Deleted Selected Prop           Delete"} );
+			keybindText.dataSource.add( {text: "Deleted Selected Animation      Delete"} );
 			keybindText.dataSource.add( {text: "Exit                            Ctrl + Q"} );
 			keybindText.dataSource.add( {text: "                    -- Editor Controls --"} );
 			keybindText.dataSource.add( {text: "Move Camera                     W, A, S, D, Left Click + Drag"} );
@@ -1551,6 +1592,11 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterSprite.scale.set(daScale, daScale);
 			onionSprite.scale.set(daScale, daScale);
 			// n-word - genzu
+		}
+
+		if (curCharacterData.character.healthIcon != null) {
+			idTextField.text = characterSprite.getHealthIconId();
+			// erm idk lmao
 		}
 
 		if (FlxG.keys.justPressed.SPACE) {
