@@ -98,7 +98,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	// -- Editor Info -- \\
 	var editorVersion = "v0.1.0";
-	var editorTitle = "Nova Character Editor REFRESHED";
+	var editorTitle = "Nova Character Editor REFRESHED - PRELEASE";
 	var changelog = [
 		{
 			version: "v0.1.0",
@@ -1040,7 +1040,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		var watermark = new Label();
 		watermark.text = editorTitle + " " + editorVersion;
-		watermark.x = FlxG.width - 282;
+		watermark.x = FlxG.width - 362; // - 282
 		watermark.y = 11;
 		watermark.cameras = [camHUD];
 		add(watermark);
