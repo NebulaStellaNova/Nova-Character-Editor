@@ -45,10 +45,13 @@ import haxe.ui.components.pickers.MenuItemPicker;
 
 import haxe.ui.containers.Box;
 import haxe.ui.containers.HBox;
+import haxe.ui.containers.VBox;
 import haxe.ui.containers.Header;
 import haxe.ui.containers.TabView;
 import haxe.ui.containers.ListView;
 import haxe.ui.containers.TableView;
+import haxe.ui.containers.TableView;
+import haxe.ui.containers.ScrollView;
 import haxe.ui.containers.HorizontalSplitter;
 
 import haxe.ui.containers.menus.Menu;
@@ -69,11 +72,28 @@ import haxe.ui.data.ArrayDataSource;
 import haxe.ui.macros.ComponentMacros;
 import openfl.geom.ColorTransform;
 
+import openfl.events.UncaughtErrorEvent;
+import openfl.net.URLLoader;
+import openfl.net.URLRequest;
+
+import flixel.text.FlxText;
+import flixel.text.FlxTextBorderStyle;
+
+import flixel.tweens.FlxTween;
+
 class CharacterEditorV2 extends MusicBeatState {
 
 	// -- Editor Info -- \\
-	var editorVersion = "v0.0.1";
+	var editorVersion = "v0.1.0";
 	var editorTitle = "Nova Character Editor REFRESHED";
+	var changelog = [
+		{
+			version: "v0.1.0",
+			changes: [
+				"REFRESHED Release + Basic Editor Functionality"
+			]
+		}
+	];
 	// ----------------- \\
 
 	// -- UI Elements \\
@@ -146,6 +166,155 @@ class CharacterEditorV2 extends MusicBeatState {
 		} else {
 			return parseJsonString(daString);
 		}
+	}
+
+	var debugTexts = [];
+
+	function debugPrint(text) {
+		var text = new FlxText(0, 50, FlxG.width, text);
+		text.visible = false;
+		text.cameras = [camHUD];
+		text.size = 20;
+		text.alignment = 'center';
+		text.borderStyle = FlxTextBorderStyle.OUTLINE;
+		text.borderSize = 3;
+		FlxTween.tween(text, {alpha: 0}, 3, {startDelay: 5});
+		debugTexts.push(text);
+		add(text);
+	}
+
+	function downloadLatestVersion() {
+		trace(currentFolder);
+		var loader = new URLLoader();
+		debugPrint("Downloading Latest Version...");
+        loader.dataFormat = 0;
+		loader.addEventListener("complete", ()->{
+			debugPrint("Latest Version Downloaded!");
+			debugPrint("Extracting ZIP File...");
+			deleteDirectory(currentFolder);
+			//FileUtil.deleteDir(currentFolder);
+			var bytesInput = new BytesInput(loader.data);
+			var reader = new Reader(bytesInput);
+			var entries = reader.read();
+			for(_entry in entries) {
+				var data = Reader.unzip(_entry);
+				if (data + "" != "") {
+					var fileName = StringTools.replace(_entry.fileName, "Nova-Character-Editor-main/", "");
+					FileUtil.writeBytesToPath(currentFolder+ "/" + fileName, data);
+				}
+			}
+			debugPrint("Reloading Mods...");
+			new FlxTimer().start(0.1, ()->{
+				//cancelUpdate = true;
+				PolymodHandler.forceReloadAssets();
+				//var targetState = ScriptedMusicBeatState.init("StageEditor");
+				//FlxG.switchState(targetState);
+				//FlxTransitionableState.skipNextTransIn = true;
+				//FlxTransitionableState.skipNextTransOut = true;
+				//targetState.scriptCall("debugPrint", ["Editor Reloaded!"]);
+				debugPrint("Re-Open Editor To Apply Update");
+			});
+		});
+		var url = "https://codeload.github.com/NebulaStellaNova/Nova-Character-Editor/zip/refs/heads/main";
+		loader.load(new URLRequest(url));
+	}
+
+	function checkForUpdates() {
+		var loader = new URLLoader();
+		loader.addEventListener("complete", ()->{
+			var cloudVersion = "v" + Json.parse(loader.data).mod_version;
+			trace(cloudVersion);
+			if (cloudVersion == null) {
+				cloudVersion = "UNKNOWN";
+			}
+			if (cloudVersion != editorVersion) {
+				trace("New Character Editor Update Found!!");
+
+				var updateWindow = new Window();
+				updateWindow.title = "New Update Found!!";
+				updateWindow.maximizable = false;
+				updateWindow.minimizable = false;
+				updateWindow.collapsable = false;
+				updateWindow.windowManager = windowManager;
+				updateWindow.width = 300;
+				updateWindow.height = 192;
+				
+
+				var nameLabel = new Label();
+				nameLabel.text = "New Version: " + cloudVersion + "\nCurrent Version: " + editorVersion;
+				nameLabel.marginTop = 6;
+				updateWindow.addComponent(nameLabel);
+
+				var updateButton = new Button();
+				updateButton.text = "Open GameBanana";
+				updateButton.marginTop = 5;
+				updateButton.onClick = ()->{
+					debugPrint("Uh! Ooooh... No GameBanana For Youuuuu.");
+					//FlxG.openURL("https://gamebanana.com/tools/19825");
+					//Ruh Roh
+				}
+				updateWindow.addComponent(updateButton);
+
+				var downloadButton = new Button();
+				downloadButton.text = "Download/Install Update";
+				downloadButton.marginTop = 5;
+				downloadButton.onClick = ()->{
+					downloadLatestVersion();
+				}
+				updateWindow.addComponent(downloadButton);
+
+				var closeButton = new Button();
+				closeButton.text = "Close";
+				closeButton.marginTop = 3;
+				closeButton.marginLeft = updateWindow.width - 90;
+				updateWindow.addComponent(closeButton);
+
+				updateWindow.screenCenter();
+				add(updateWindow);
+				FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+
+				closeButton.onClick = ()->{
+					windowManager.closeWindow(updateWindow);
+				}
+			} else if (didFirstCheck) {
+				var updateWindow = new Window();
+				updateWindow.title = "No Update Found.";
+				updateWindow.maximizable = false;
+				updateWindow.minimizable = false;
+				updateWindow.collapsable = false;
+				updateWindow.windowManager = windowManager;
+				updateWindow.width = 300;
+				updateWindow.height = 118;
+
+				var nameLabel = new Label();
+				nameLabel.text = "Your Editor is Up To Date!";
+				nameLabel.marginTop = 6;
+				updateWindow.addComponent(nameLabel);
+
+				var closeButton = new Button();
+				closeButton.text = "Close";
+				closeButton.marginTop = 3;
+				closeButton.marginLeft = updateWindow.width - 90;
+				updateWindow.addComponent(closeButton);
+
+				updateWindow.screenCenter();
+				add(updateWindow);
+				FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+
+				closeButton.onClick = ()->{
+					windowManager.closeWindow(updateWindow);
+				}
+			}
+			didFirstCheck = true;
+			//var bitmap:BitmapData = BitmapData.fromBytes(loader.data);
+			//var sprite:FunkinSprite = new FunkinSprite(10, 10).loadBitmapData(bitmap);
+			//add(sprite);
+			//trace(loader.data);
+			//FileUtil.writeBytesToPath(".temp/test.png", loader.data);
+		});
+		//var reference = new FileReference();
+		var url = "https://raw.githubusercontent.com/NebulaStellaNova/Nova-Character-Editor/refs/heads/main/_polymod_meta.json"; 
+		loader.load(new URLRequest(url));
 	}
 
 	public function reloadAnimationList() {
@@ -284,7 +453,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
 			trace(fixPath(path));
 			writeCharacterFile(fixPath(path), curCharacterData.character);
-			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEdutirV2'));
+			//FlxG.switchState(ScriptedMusicBeatState.init('CharacterEdotirV2')); // I spell very good - nebula
+			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
 		}, null, curCharacterData.fileName);
 	}
 
@@ -504,256 +674,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		charPropertiesItem.text = 'Character Info';
 		charPropertiesItem.shortcutText = '';
 		charPropertiesItem.onClick = () -> {
-
-			openSound();
-
-			characterInfoWindow = new Window();
-			characterInfoWindow.cameras = [camHUD];
-			characterInfoWindow.windowManager = windowManager;
-			characterInfoWindow.title = "Character Info";
-			characterInfoWindow.maximizable = false;
-			characterInfoWindow.minimizable = false;
-			characterInfoWindow.collapsable = false;
-			characterInfoWindow.width = 250;
-			characterInfoWindow.height = 620;
-			characterInfoWindow.screenCenter();
-			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
-			characterInfoWindow.y = topBar.height + 10;
-			add(characterInfoWindow);
-
-			characterList = new DropDown();
-			characterList.text = "Pick Character";
-			characterList.searchable = true;
-			characterList.width = 215;
-			for (i in characterData) {
-				characterList.dataSource.add({text: i.character.name});
-			}
-			characterList.onChange = ()->{
-				for (i in characterData) {
-					if (i.character.name == characterList.text) {
-						loadCharacter(i);
-						characterList.text = "Editing: " + i.character.name;
-						break;
-					}
-				}
-			}
-			characterInfoWindow.addComponent(characterList);
-
-			var nameBox = new HBox();
-			characterInfoWindow.addComponent(nameBox);
-
-			characterNameLabel = new Label();
-			characterNameLabel.text = 'Name:';
-			characterNameLabel.marginTop = 6;
-			nameBox.addComponent(characterNameLabel);
-
-			charName = new TextField();
-			charName.placeholder = 'Character';
-			charName.text = curCharacterData.character.name;
-			charName.color = 0xFFaaaaaa;
-			charName.width = 172;
-			nameBox.addComponent(charName);
-
-			var assetPathBoxBox = new HBox();
-			characterInfoWindow.addComponent(assetPathBoxBox);
-
-			var assetPathLabel = new Label();
-			assetPathLabel.text = 'Asset Path:';
-			assetPathLabel.marginTop = 6;
-			assetPathBoxBox.addComponent(assetPathLabel);
-
-			assetPath = new TextField();
-			assetPath.placeholder = '';
-			assetPath.text = StringTools.replace(curCharacterData.character.assetPath, "characters/", "");
-			// assetPath.marginTop = 6;
-			assetPath.color = 0xFFaaaaaa;
-			assetPath.width = 130;
-			assetPathBoxBox.addComponent(assetPath);
-
-			var renderTypeBox = new HBox();
-			characterInfoWindow.addComponent(renderTypeBox);
-
-			var renderTypeLabel = new Label();
-			renderTypeLabel.text = 'Render Type:';
-			renderTypeLabel.marginTop = 6;
-			renderTypeBox.addComponent(renderTypeLabel);
-
-			renderType = new TextField();
-			renderType.placeholder = 'sparrow';
-			renderType.text = curCharacterData.character.renderType != null ? curCharacterData.character.renderType : "sparrow";
-			// assetPath.marginTop = 6;
-			renderType.color = 0xFFaaaaaa;
-			renderType.width = 123;
-			renderTypeBox.addComponent(renderType);
-
-			var charScaleBox = new HBox();
-			characterInfoWindow.addComponent(charScaleBox);
-
-			var charScaleLabel = new Label();
-			charScaleLabel.text = 'Scale:';
-			charScaleLabel.marginTop = 6;
-			charScaleBox.addComponent(charScaleLabel);
-
-			charScaleStepper = new NumberStepper();
-			charScaleStepper.color = 0xFFaaaaaa;
-			charScaleStepper.min = 0.1;
-			charScaleStepper.step = 0.1;
-			charScaleStepper.width = 165;
-			charScaleStepper.pos = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
-			charScaleStepper.onChange = ()->{
-				// NIGGER CODE BRO FUCK - genzu
-				// 💀 - nebula
-				charScaleStepper.pos = charScaleStepper.pos != null ? charScaleStepper.pos : 1;
-				curCharacterData.character.scale = charScaleStepper.pos;
-			}
-			charScaleBox.addComponent(charScaleStepper);
-
-			var singTimeBox = new HBox();
-			characterInfoWindow.addComponent(singTimeBox);
-
-			var singTimeLabel = new Label();
-			singTimeLabel.text = 'Sing Time:';
-			singTimeLabel.marginTop = 6;
-			singTimeBox.addComponent(singTimeLabel);
-
-			singTimeStepper = new NumberStepper();
-			singTimeStepper.color = 0xFFaaaaaa;
-			singTimeStepper.width = 138;
-			singTimeStepper.pos = curCharacterData.character.singTime;
-			singTimeBox.addComponent(singTimeStepper);
-
-			var danceEveryBox = new HBox();
-			characterInfoWindow.addComponent(danceEveryBox);
-
-			var danceEveryLabel = new Label();
-			danceEveryLabel.text = 'Dance Interval:';
-			danceEveryLabel.marginTop = 6;
-			danceEveryBox.addComponent(danceEveryLabel);
-
-			danceEveryStepper = new NumberStepper();
-			danceEveryStepper.color = 0xFFaaaaaa;
-			danceEveryStepper.width = 103;
-			danceEveryStepper.pos = curCharacterData.character.danceEvery != null ? curCharacterData.character.danceEvery : 1;
-			danceEveryStepper.onChange = ()->{
-				curCharacterData.character.danceEvery = danceEveryStepper.pos;
-			}
-			danceEveryBox.addComponent(danceEveryStepper);
-
-			charOffsetsBox = new HBox();
-			characterInfoWindow.addComponent(charOffsetsBox);
-
-			var charOffsetLabel = new Label();
-			charOffsetLabel.text = 'Offsets:';
-			charOffsetLabel.marginTop = 6;
-			charOffsetsBox.addComponent(charOffsetLabel);
-
-			charStepperX = new NumberStepper();
-			charStepperX.color = 0xFFaaaaaa;
-			charStepperX.width = 65;
-			charStepperX.marginLeft = 17;
-			charOffsetsBox.addComponent(charStepperX);
-
-			charStepperY = new NumberStepper();
-			charStepperY.color = 0xFFaaaaaa;
-			charStepperY.marginLeft = 17;
-			charStepperY.width = 65;
-			charOffsetsBox.addComponent(charStepperY);
-
-			var charflipXBox = new HBox();
-			charflipXBox.marginTop = -10;
-			charflipXBox.marginLeft = 30;
-			characterInfoWindow.addComponent(charflipXBox);
-			characterInfoWindow.addComponent(charflipXBox); // Adding twice gives space between
-
-			var charFlipX = new Label();
-			charFlipX.text = 'Flip X:';
-			charFlipX.marginTop = 6;
-			charflipXBox.addComponent(charFlipX);
-
-			charFlipXCheckBox = new CheckBox();
-			charFlipXCheckBox.marginTop = 5;
-			charFlipXCheckBox.color = 0x00aaaaaa;
-			charflipXBox.addComponent(charFlipXCheckBox);
-
-			var charFlipY = new Label();
-			charFlipY.text = 'Flip Y:';
-			charFlipY.marginTop = 6;
-			charflipXBox.addComponent(charFlipY);
-
-			var charFlipYCheckBox = new CheckBox();
-			charFlipYCheckBox.marginTop = 5;
-			charFlipYCheckBox.color = 0x00aaaaaa;	
-			charflipXBox.addComponent(charFlipYCheckBox);
-
-			var splitter = new HorizontalSplitter();
-			characterInfoWindow.addComponent(splitter);
-
-			var animLabel = new Label();
-			animLabel.text = 'Animations';
-			animLabel.marginTop = 8;
-			characterInfoWindow.addComponent(animLabel);
-
-			animationList = new ListView();
-			animationList.onChange = ()->{
-				characterSprite.playAnimation(animationList.selectedItem.text, true);
-				var curAnim;
-				for (i in curCharacterData.character.animations) {
-					if (i.name == animationList.selectedItem.text) {
-						curAnim = i;
-					}
-				}
-				if (animName != null) {
-					animName.text = curAnim.name;
-				}
-				if (prefix != null) {
-					prefix.text = curAnim.prefix;
-				}
-				if (indices != null) {
-					//indices.text = curAnim.indices;
-				}
-				if (animStepperX != null) {
-					animStepperX.pos = curAnim.offsets != null ? curAnim.offsets[0] : 0;
-				}
-				if (animStepperY != null) {
-					animStepperY.pos = curAnim.offsets != null ? curAnim.offsets[1] : 0;
-				}
-				// prefix.text = animationList.selectedItem.text;
-			}
-			animationList.width = 215;
-			animationList.height = 175;
-			animationList.marginTop = 6;
-			characterInfoWindow.addComponent(animationList);
-
-			var editButtonBox = new HBox();
-			characterInfoWindow.addComponent(editButtonBox);
-			
-			var animEditButton = new Button();
-			animEditButton.text = 'Edit Animation';
-			animEditButton.marginTop = 6;
-			animEditButton.width = 215;
-			animEditButton.onClick = ()->{
-				openSound();
-				openAnimEditWindow();
-			}
-			editButtonBox.addComponent(animEditButton);
-
-			var createDeleteButtonBox = new HBox();
-			characterInfoWindow.addComponent(createDeleteButtonBox);
-
-			var createAnimButton = new Button();
-			createAnimButton.width = 105;
-			createAnimButton.marginTop = 6;
-			createAnimButton.text = 'New Anim';
-			createDeleteButtonBox.addComponent(createAnimButton);
-
-			var deleteAnimButton = new Button();
-			deleteAnimButton.width = 105;
-			deleteAnimButton.marginTop = 6;
-			deleteAnimButton.text = 'Delete Anim';
-			createDeleteButtonBox.addComponent(deleteAnimButton);
-
-			reloadAnimationList();
-			
+			fuckGenzu();
 		}
 		editMenu.addComponent(charPropertiesItem);
 
@@ -847,7 +768,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		userGuideItem.text = 'User Guide';
 		userGuideItem.shortcutText = 'F1';
 		userGuideItem.onClick = () -> {
-
+			openUserGuide();
 		}
 		helpItem.addComponent(userGuideItem);
 		
@@ -880,155 +801,608 @@ class CharacterEditorV2 extends MusicBeatState {
 		
 		fuckYouHaxeUI.addComponent(bgColorPicker);
 		add(fuckYouHaxeUI); */
+		fuckGenzu();
+		openAnimEditWindow();
 
+		checkForUpdates();
 	}
 
-	function openAnimEditWindow() {
-		editAnimWindow = new Window();
-		editAnimWindow.cameras = [camHUD];
-		editAnimWindow.windowManager = windowManager;
-		editAnimWindow.title = "Animation Info";
-		editAnimWindow.maximizable = false;
-		editAnimWindow.minimizable = false;
-		editAnimWindow.collapsable = false;
-		// editAnimWindow.color = 0xFFFFFF00;
-		editAnimWindow.width = 250;
-		editAnimWindow.height = 270;
-		editAnimWindow.screenCenter();
-		editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width - 10;
-		editAnimWindow.y = topBar.height + 10;
-		add(editAnimWindow);
+	function fuckGenzu() {
+		if (characterInfoWindow == null || !characterInfoWindow.visible) {
 
-		animNameBox = new HBox();
-		editAnimWindow.addComponent(animNameBox);
-
-		var ainmNameLabel = new Label();
-		ainmNameLabel.text = 'Name:';
-		ainmNameLabel.marginTop = 6;
-		animNameBox.addComponent(ainmNameLabel);
-
-		// characterSprite.animation.name
-		animName = new TextField();
-		animName.placeholder = "Animation Name";
-		animName.text = characterSprite.animation.name;
-		animName.width =  175;
-		animName.color = 0xFFaaaaaa;
-		animNameBox.addComponent(animName);
-
-		prefixBox = new HBox();
-		editAnimWindow.addComponent(prefixBox);
-
-		var prefixLabel = new Label();
-		prefixLabel.text = 'Prefix:';
-		prefixLabel.marginTop = 6;
-		prefixBox.addComponent(prefixLabel);
-
-		prefix = new TextField();
-		prefix.placeholder = "None";
-		prefix.width =  161;
-		prefix.color = 0xFFaaaaaa;
-		prefix.onChange = ()->{
-			// prefix.text = 'abcd';
-		}
-		prefixBox.addComponent(prefix);
-		
-		indicesBox = new HBox();
-		editAnimWindow.addComponent(indicesBox);
-
-		var indicesLabel = new Label();
-		indicesLabel.text = 'Indices:';
-		indicesLabel.marginTop = 6;
-		indicesBox.addComponent(indicesLabel);
-
-		indices = new TextField();
-		indices.placeholder = "Coming Soon";
-		indices.width =  154;
-		indices.color = 0xFFaaaaaa;
-		indices.onChange = ()->{
-			/* if (indices.text != "") {
-				curAnim.indices = [];
-				for (i in indices.text.split(",")) {
-					curAnim.indices.push(Std.parseInt(i));
+			openSound();
+	
+			characterInfoWindow = new Window();
+			characterInfoWindow.cameras = [camHUD];
+			characterInfoWindow.windowManager = windowManager;
+			characterInfoWindow.title = "Character Info";
+			characterInfoWindow.maximizable = false;
+			characterInfoWindow.minimizable = false;
+			characterInfoWindow.collapsable = false;
+			characterInfoWindow.width = 250;
+			characterInfoWindow.height = 620;
+			characterInfoWindow.screenCenter();
+			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
+			characterInfoWindow.y = 46;
+			add(characterInfoWindow);
+	
+			characterList = new DropDown();
+			characterList.text = "Pick Character";
+			characterList.searchable = true;
+			characterList.width = 215;
+			for (i in characterData) {
+				characterList.dataSource.add({text: i.character.name});
+			}
+			characterList.onChange = ()->{
+				for (i in characterData) {
+					if (i.character.name == characterList.text) {
+						loadCharacter(i);
+						characterList.text = "Editing: " + i.character.name;
+						break;
+					}
 				}
-			} else {
-				curAnim.frameIndices = null;
-			} */
+			}
+			characterInfoWindow.addComponent(characterList);
+	
+			var nameBox = new HBox();
+			characterInfoWindow.addComponent(nameBox);
+	
+			characterNameLabel = new Label();
+			characterNameLabel.text = 'Name:';
+			characterNameLabel.marginTop = 6;
+			nameBox.addComponent(characterNameLabel);
+	
+			charName = new TextField();
+			charName.placeholder = 'Character';
+			charName.text = curCharacterData.character.name;
+			charName.color = 0xFFaaaaaa;
+			charName.width = 172;
+			nameBox.addComponent(charName);
+	
+			var assetPathBoxBox = new HBox();
+			characterInfoWindow.addComponent(assetPathBoxBox);
+	
+			var assetPathLabel = new Label();
+			assetPathLabel.text = 'Asset Path:';
+			assetPathLabel.marginTop = 6;
+			assetPathBoxBox.addComponent(assetPathLabel);
+	
+			assetPath = new TextField();
+			assetPath.placeholder = '';
+			assetPath.text = StringTools.replace(curCharacterData.character.assetPath, "characters/", "");
+			// assetPath.marginTop = 6;
+			assetPath.color = 0xFFaaaaaa;
+			assetPath.width = 130;
+			assetPathBoxBox.addComponent(assetPath);
+	
+			var renderTypeBox = new HBox();
+			characterInfoWindow.addComponent(renderTypeBox);
+	
+			var renderTypeLabel = new Label();
+			renderTypeLabel.text = 'Render Type:';
+			renderTypeLabel.marginTop = 6;
+			renderTypeBox.addComponent(renderTypeLabel);
+	
+			renderType = new TextField();
+			renderType.placeholder = 'sparrow';
+			renderType.text = curCharacterData.character.renderType != null ? curCharacterData.character.renderType : "sparrow";
+			// assetPath.marginTop = 6;
+			renderType.color = 0xFFaaaaaa;
+			renderType.width = 123;
+			renderTypeBox.addComponent(renderType);
+	
+			var charScaleBox = new HBox();
+			characterInfoWindow.addComponent(charScaleBox);
+	
+			var charScaleLabel = new Label();
+			charScaleLabel.text = 'Scale:';
+			charScaleLabel.marginTop = 6;
+			charScaleBox.addComponent(charScaleLabel);
+	
+			charScaleStepper = new NumberStepper();
+			charScaleStepper.color = 0xFFaaaaaa;
+			charScaleStepper.min = 0.1;
+			charScaleStepper.step = 0.1;
+			charScaleStepper.width = 165;
+			charScaleStepper.pos = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
+			charScaleStepper.onChange = ()->{
+				// NIGGER CODE BRO FUCK - genzu
+				// 💀 - nebula
+				charScaleStepper.pos = charScaleStepper.pos != null ? charScaleStepper.pos : 1;
+				curCharacterData.character.scale = charScaleStepper.pos;
+			}
+			charScaleBox.addComponent(charScaleStepper);
+	
+			var singTimeBox = new HBox();
+			characterInfoWindow.addComponent(singTimeBox);
+	
+			var singTimeLabel = new Label();
+			singTimeLabel.text = 'Sing Time:';
+			singTimeLabel.marginTop = 6;
+			singTimeBox.addComponent(singTimeLabel);
+	
+			singTimeStepper = new NumberStepper();
+			singTimeStepper.color = 0xFFaaaaaa;
+			singTimeStepper.width = 138;
+			singTimeStepper.pos = curCharacterData.character.singTime;
+			singTimeBox.addComponent(singTimeStepper);
+	
+			var danceEveryBox = new HBox();
+			characterInfoWindow.addComponent(danceEveryBox);
+	
+			var danceEveryLabel = new Label();
+			danceEveryLabel.text = 'Dance Interval:';
+			danceEveryLabel.marginTop = 6;
+			danceEveryBox.addComponent(danceEveryLabel);
+	
+			danceEveryStepper = new NumberStepper();
+			danceEveryStepper.color = 0xFFaaaaaa;
+			danceEveryStepper.width = 103;
+			danceEveryStepper.pos = curCharacterData.character.danceEvery != null ? curCharacterData.character.danceEvery : 1;
+			danceEveryStepper.onChange = ()->{
+				curCharacterData.character.danceEvery = danceEveryStepper.pos;
+			}
+			danceEveryBox.addComponent(danceEveryStepper);
+	
+			charOffsetsBox = new HBox();
+			characterInfoWindow.addComponent(charOffsetsBox);
+	
+			var charOffsetLabel = new Label();
+			charOffsetLabel.text = 'Offsets:';
+			charOffsetLabel.marginTop = 6;
+			charOffsetsBox.addComponent(charOffsetLabel);
+	
+			charStepperX = new NumberStepper();
+			charStepperX.color = 0xFFaaaaaa;
+			charStepperX.width = 65;
+			charStepperX.marginLeft = 17;
+			charOffsetsBox.addComponent(charStepperX);
+	
+			charStepperY = new NumberStepper();
+			charStepperY.color = 0xFFaaaaaa;
+			charStepperY.marginLeft = 17;
+			charStepperY.width = 65;
+			charOffsetsBox.addComponent(charStepperY);
+	
+			var charflipXBox = new HBox();
+			charflipXBox.marginTop = -10;
+			charflipXBox.marginLeft = 30;
+			characterInfoWindow.addComponent(charflipXBox);
+			characterInfoWindow.addComponent(charflipXBox); // Adding twice gives space between
+	
+			var charFlipX = new Label();
+			charFlipX.text = 'Flip X:';
+			charFlipX.marginTop = 6;
+			charflipXBox.addComponent(charFlipX);
+	
+			charFlipXCheckBox = new CheckBox();
+			charFlipXCheckBox.marginTop = 5;
+			charFlipXCheckBox.color = 0x00aaaaaa;
+			charflipXBox.addComponent(charFlipXCheckBox);
+	
+			var charFlipY = new Label();
+			charFlipY.text = 'Flip Y:';
+			charFlipY.marginTop = 6;
+			charflipXBox.addComponent(charFlipY);
+	
+			var charFlipYCheckBox = new CheckBox();
+			charFlipYCheckBox.marginTop = 5;
+			charFlipYCheckBox.color = 0x00aaaaaa;	
+			charflipXBox.addComponent(charFlipYCheckBox);
+	
+			var splitter = new HorizontalSplitter();
+			characterInfoWindow.addComponent(splitter);
+	
+			var animLabel = new Label();
+			animLabel.text = 'Animations';
+			animLabel.marginTop = 8;
+			characterInfoWindow.addComponent(animLabel);
+	
+			animationList = new ListView();
+			animationList.onChange = ()->{
+				characterSprite.playAnimation(animationList.selectedItem.text, true);
+				var curAnim;
+				for (i in curCharacterData.character.animations) {
+					if (i.name == animationList.selectedItem.text) {
+						curAnim = i;
+					}
+				}
+				if (animName != null) {
+					animName.text = curAnim.name;
+				}
+				if (prefix != null) {
+					prefix.text = curAnim.prefix;
+				}
+				if (indices != null) {
+					//indices.text = curAnim.indices;
+				}
+				if (animStepperX != null) {
+					animStepperX.pos = curAnim.offsets != null ? curAnim.offsets[0] : 0;
+				}
+				if (animStepperY != null) {
+					animStepperY.pos = curAnim.offsets != null ? curAnim.offsets[1] : 0;
+				}
+				// prefix.text = animationList.selectedItem.text;
+			}
+			animationList.width = 215;
+			animationList.height = 175;
+			animationList.marginTop = 6;
+			characterInfoWindow.addComponent(animationList);
+	
+			var editButtonBox = new HBox();
+			characterInfoWindow.addComponent(editButtonBox);
+			
+			var animEditButton = new Button();
+			animEditButton.text = 'Edit Animation';
+			animEditButton.marginTop = 6;
+			animEditButton.width = 215;
+			animEditButton.onClick = ()->{
+				openSound();
+				openAnimEditWindow();
+			}
+			editButtonBox.addComponent(animEditButton);
+	
+			var createDeleteButtonBox = new HBox();
+			characterInfoWindow.addComponent(createDeleteButtonBox);
+	
+			var createAnimButton = new Button();
+			createAnimButton.width = 105;
+			createAnimButton.marginTop = 6;
+			createAnimButton.text = 'New Anim';
+			createDeleteButtonBox.addComponent(createAnimButton);
+	
+			var deleteAnimButton = new Button();
+			deleteAnimButton.width = 105;
+			deleteAnimButton.marginTop = 6;
+			deleteAnimButton.text = 'Delete Anim';
+			createDeleteButtonBox.addComponent(deleteAnimButton);
+	
+			reloadAnimationList();
+			
+		} else {
+			windowManager.closeWindow(characterInfoWindow);
 		}
-		indicesBox.addComponent(indices);
+		
+	}
 
-		animOffsetsBox = new HBox();
-		editAnimWindow.addComponent(animOffsetsBox);
+	var editAnimWindow;
 
-		var aninOffsetLabel = new Label();
-		aninOffsetLabel.text = 'Offsets:';
-		aninOffsetLabel.marginTop = 6;
-		animOffsetsBox.addComponent(aninOffsetLabel);
+	function openAnimEditWindow() {
+		
+		if (editAnimWindow == null || !editAnimWindow.visible) {
 
-		animStepperX = new NumberStepper();
-		animStepperX.color = 0xFFaaaaaa;
-		animStepperX.width = 65;
-		animStepperX.marginLeft = 20;
-		animOffsetsBox.addComponent(animStepperX);
+			editAnimWindow = new Window();
+			editAnimWindow.cameras = [camHUD];
+			editAnimWindow.windowManager = windowManager;
+			editAnimWindow.title = "Animation Info";
+			editAnimWindow.maximizable = false;
+			editAnimWindow.minimizable = false;
+			editAnimWindow.collapsable = false;
+			// editAnimWindow.color = 0xFFFFFF00;
+			editAnimWindow.width = 250;
+			editAnimWindow.height = 270;
+			editAnimWindow.screenCenter();
+			editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width - 5;
+			editWindowStartX = editAnimWindow.x;
+			editAnimWindow.y = 46;
+			add(editAnimWindow);
 
-		animStepperY = new NumberStepper();
-		animStepperY.color = 0xFFaaaaaa;
-		animStepperY.marginLeft = 20;
-		animStepperY.width = 65;
-		animOffsetsBox.addComponent(animStepperY);
+			animNameBox = new HBox();
+			editAnimWindow.addComponent(animNameBox);
 
-		var animAssetPathBoxBox = new HBox();
-		editAnimWindow.addComponent(animAssetPathBoxBox);
+			var ainmNameLabel = new Label();
+			ainmNameLabel.text = 'Name:';
+			ainmNameLabel.marginTop = 6;
+			animNameBox.addComponent(ainmNameLabel);
 
-		var animAssetPathLabel = new Label();
-		animAssetPathLabel.text = 'Asset Path:';
-		animAssetPathLabel.marginTop = 6;
-		animAssetPathBoxBox.addComponent(animAssetPathLabel);
+			// characterSprite.animation.name
+			animName = new TextField();
+			animName.placeholder = "Animation Name";
+			animName.text = characterSprite.animation.name;
+			animName.width =  175;
+			animName.color = 0xFFaaaaaa;
+			animNameBox.addComponent(animName);
 
-		animAssetPath = new TextField();
-		animAssetPath.placeholder = 'None';
-		// assetPath.marginTop = 6;
-		animAssetPath.color = 0xFFaaaaaa;
-		animAssetPath.width = 135;
-		animAssetPathBoxBox.addComponent(animAssetPath);
+			prefixBox = new HBox();
+			editAnimWindow.addComponent(prefixBox);
 
-		var animflipXBox = new HBox();
-		animflipXBox.marginTop = 0;
-		animflipXBox.marginLeft = 30;
-		editAnimWindow.addComponent(animflipXBox);
+			var prefixLabel = new Label();
+			prefixLabel.text = 'Prefix:';
+			prefixLabel.marginTop = 6;
+			prefixBox.addComponent(prefixLabel);
 
-		var animFlipX = new Label();
-		animFlipX.text = 'Flip X:';
-		animFlipX.marginTop = 6;
-		animflipXBox.addComponent(animFlipX);
+			prefix = new TextField();
+			prefix.placeholder = "None";
+			prefix.width =  161;
+			prefix.color = 0xFFaaaaaa;
+			prefix.onChange = ()->{
+				// prefix.text = 'abcd';
+			}
+			prefixBox.addComponent(prefix);
+			
+			indicesBox = new HBox();
+			editAnimWindow.addComponent(indicesBox);
 
-		var animFlipXCheckBox = new CheckBox();
-		animFlipXCheckBox.marginTop = 5;
-		animFlipXCheckBox.color = 0xFFaaaaaa;
-		animflipXBox.addComponent(animFlipXCheckBox);
+			var indicesLabel = new Label();
+			indicesLabel.text = 'Indices:';
+			indicesLabel.marginTop = 6;
+			indicesBox.addComponent(indicesLabel);
 
-		var animFlipY = new Label();
-		animFlipY.text = 'Flip Y:';
-		animFlipY.marginTop = 6;
-		animflipXBox.addComponent(animFlipY);
+			indices = new TextField();
+			indices.placeholder = "Coming Soon";
+			indices.width =  154;
+			indices.color = 0xFFaaaaaa;
+			indices.onChange = ()->{
+				/* if (indices.text != "") {
+					curAnim.indices = [];
+					for (i in indices.text.split(",")) {
+						curAnim.indices.push(Std.parseInt(i));
+					}
+				} else {
+					curAnim.frameIndices = null;
+				} */
+			}
+			indicesBox.addComponent(indices);
 
-		var animFlipYCheckBox = new CheckBox();
-		animFlipYCheckBox.marginTop = 5;
-		animFlipYCheckBox.color = 0xFFaaaaaa;
-		animflipXBox.addComponent(animFlipYCheckBox);
+			animOffsetsBox = new HBox();
+			editAnimWindow.addComponent(animOffsetsBox);
 
-		var loopBox = new HBox();
-		loopBox.marginLeft = 75;
-		editAnimWindow.addComponent(loopBox);
+			var aninOffsetLabel = new Label();
+			aninOffsetLabel.text = 'Offsets:';
+			aninOffsetLabel.marginTop = 6;
+			animOffsetsBox.addComponent(aninOffsetLabel);
 
-		var loopLabel = new Label();
-		loopLabel.text = 'Looped:';
-		loopLabel.marginTop = 6;
-		loopBox.addComponent(loopLabel);
+			animStepperX = new NumberStepper();
+			animStepperX.color = 0xFFaaaaaa;
+			animStepperX.width = 65;
+			animStepperX.marginLeft = 20;
+			animOffsetsBox.addComponent(animStepperX);
 
-		var loopCheckBox = new CheckBox();
-		loopCheckBox.marginTop = 6;
-		loopCheckBox.color = 0xFFaaaaaa;
-		loopBox.addComponent(loopCheckBox);
+			animStepperY = new NumberStepper();
+			animStepperY.color = 0xFFaaaaaa;
+			animStepperY.marginLeft = 20;
+			animStepperY.width = 65;
+			animOffsetsBox.addComponent(animStepperY);
+
+			var animAssetPathBoxBox = new HBox();
+			editAnimWindow.addComponent(animAssetPathBoxBox);
+
+			var animAssetPathLabel = new Label();
+			animAssetPathLabel.text = 'Asset Path:';
+			animAssetPathLabel.marginTop = 6;
+			animAssetPathBoxBox.addComponent(animAssetPathLabel);
+
+			animAssetPath = new TextField();
+			animAssetPath.placeholder = 'None';
+			// assetPath.marginTop = 6;
+			animAssetPath.color = 0xFFaaaaaa;
+			animAssetPath.width = 135;
+			animAssetPathBoxBox.addComponent(animAssetPath);
+
+			var animflipXBox = new HBox();
+			animflipXBox.marginTop = 0;
+			animflipXBox.marginLeft = 30;
+			editAnimWindow.addComponent(animflipXBox);
+
+			var animFlipX = new Label();
+			animFlipX.text = 'Flip X:';
+			animFlipX.marginTop = 6;
+			animflipXBox.addComponent(animFlipX);
+
+			var animFlipXCheckBox = new CheckBox();
+			animFlipXCheckBox.marginTop = 5;
+			animFlipXCheckBox.color = 0xFFaaaaaa;
+			animflipXBox.addComponent(animFlipXCheckBox);
+
+			var animFlipY = new Label();
+			animFlipY.text = 'Flip Y:';
+			animFlipY.marginTop = 6;
+			animflipXBox.addComponent(animFlipY);
+
+			var animFlipYCheckBox = new CheckBox();
+			animFlipYCheckBox.marginTop = 5;
+			animFlipYCheckBox.color = 0xFFaaaaaa;
+			animflipXBox.addComponent(animFlipYCheckBox);
+
+			var loopBox = new HBox();
+			loopBox.marginLeft = 75;
+			editAnimWindow.addComponent(loopBox);
+
+			var loopLabel = new Label();
+			loopLabel.text = 'Looped:';
+			loopLabel.marginTop = 6;
+			loopBox.addComponent(loopLabel);
+
+			var loopCheckBox = new CheckBox();
+			loopCheckBox.marginTop = 6;
+			loopCheckBox.color = 0xFFaaaaaa;
+			loopBox.addComponent(loopCheckBox);
+		} else {
+			windowManager.closeWindow(editAnimWindow);
+		}
+	}
+
+	var helpWindow;
+	// v Fuck YOU. v \\
+
+	function openUserGuide() {
+		if (helpWindow == null || !helpWindow.visible) {
+			openSound();
+	
+			helpWindow = new Window();
+			helpWindow.title = 'Help';
+			helpWindow.windowManager = windowManager;
+			helpWindow.y = 100;
+			helpWindow.x = 100;
+			helpWindow.width = 500;
+			helpWindow.height = 600;
+			helpWindow.screenCenter();
+			helpWindow.maximizable = false;
+			helpWindow.minimizable = false;
+			helpWindow.collapsable = false;
+			add(helpWindow);
+	
+			var helpTabs = new TabView();
+			helpTabs.width = 465;
+			helpTabs.height = 525;
+	
+			var helpTabBarGuide = new Box();
+			helpTabBarGuide.text = 'Guide';
+			helpTabs.addComponent(helpTabBarGuide);
+	
+			var guideLabel = new Label();
+			guideLabel.width = helpTabs.width;
+			guideLabel.text = "So you decided you can't figure out anything... well that makes two of us!\n\n" + 
+			"Saldy not much is here at the moment so how about you take a look at the two other tabs to pass the time! You might learn a thing or two!" + 
+			"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + 
+			"to be changed.";
+			helpTabBarGuide.addComponent(guideLabel);
+	
+			var helpTabBarShortcuts = new Box();
+			helpTabBarShortcuts.text = 'Keybind';
+			helpTabs.addComponent(helpTabBarShortcuts);
+	
+			helpTabelView = new TableView();
+			helpTabelView.height = helpTabs.height - 45;
+			helpTabBarShortcuts.addComponent(helpTabelView);
+	
+			var helpHeader = new Header();
+			helpTabelView.addComponent(helpHeader);
+	
+			var actionColumn = new Column();
+			actionColumn.text = 'Action';
+			actionColumn.width = (helpTabs.width/2) - 9;
+			helpHeader.addComponent(actionColumn);
+			
+			var keybindColumn = new Column();
+			keybindColumn.text = 'Keybind';
+			keybindColumn.width = (helpTabs.width/2) - 9;
+			helpHeader.addComponent(keybindColumn);
+	
+			var keybindText = new ListView();
+			keybindText.marginTop = 25;
+			keybindText.allowInteraction = false;
+			keybindText.width = helpTabs.width - 16;
+			keybindText.onChange = ()->{
+				keybindText.selectedItem = null;
+				keybindText.selectedItems = [];
+			}
+			
+			keybindText.dataSource.add( {text: "Show User Guide                 F1"} );
+			//keybindText.dataSource.add( {text: "Open Stage                      Ctrl + O"} );
+			keybindText.dataSource.add( {text: "New Stage                       Ctrl + N"} );
+			keybindText.dataSource.add( {text: "Save                            Ctrl + S"} );
+			keybindText.dataSource.add( {text: "Save As                         Ctrl + Shift + S"} );
+			//keybindText.dataSource.add( {text: "Reset Camera Position           Ctrl + R"} );
+			keybindText.dataSource.add( {text: "Check For Updates               Ctrl + U"} );
+			keybindText.dataSource.add( {text: "Reset Camera Zoom               Ctrl + Shift + R"} );
+			//keybindText.dataSource.add( {text: "Create/Add Prop                 Ctrl + A"} );
+			keybindText.dataSource.add( {text: "Deleted Selected Prop           Delete"} );
+			keybindText.dataSource.add( {text: "Exit                            Ctrl + Q"} );
+			keybindText.dataSource.add( {text: "                    -- Editor Controls --"} );
+			keybindText.dataSource.add( {text: "Move Camera                     W, A, S, D, Left Click + Drag"} );
+			keybindText.dataSource.add( {text: "Zoom Camera                     Q, E, Mouse Wheel"} );
+			helpTabBarShortcuts.addComponent(keybindText);
+	
+			var helpTabExtra = new ScrollView();
+			helpTabExtra.text = 'Change Log';
+			helpTabExtra.contentWidth = helpTabs.width - 30;
+			helpTabExtra.isScrollableHorizontally = false;
+			helpTabExtra.width = helpTabs.width - 16;
+			helpTabExtra.height = helpTabs.height - 42;
+			helpTabs.addComponent(helpTabExtra);
+	
+			var changelogText = new Label();
+			changelogText.width = helpTabs.width;
+			changelogText.text = editorTitle + " " + editorVersion +
+			"\nChange Log:\n";
+			for (i in changelog) {
+				changelogText.text += "\n" + i.version + "\n";
+				for (change in i.changes) {
+					changelogText.text += change + "\n";
+				}
+			}
+			helpTabExtra.addComponent(changelogText);
+	
+			var creditsTab = new Box();
+			creditsTab.text = 'Credits';
+			helpTabs.addComponent(creditsTab);
+	
+			var creditsLabel = new Label();
+			creditsLabel.width = helpTabs.width;
+			creditsLabel.text = "Credits:";
+			creditsTab.addComponent(creditsLabel);
+	
+			var creditsList = new ListView();
+			creditsList.marginTop = 25;
+			creditsList.allowInteraction = false;
+			creditsList.width = helpTabs.width - 16;
+	
+			creditsList.dataSource.add( {text: "Nebula S. Nova                  Main Coder, Lofi Freaky Menu"} );
+			creditsList.dataSource.add( {text: "GENZU                           Coded The \"Help\" Window"} );
+			
+			creditsTab.addComponent(creditsList);
+	
+			var todoTab = new Box();
+			todoTab.text = 'To-Do';
+			//helpTabs.addComponent(todoTab);
+	
+			var todoLabel = new Label(); // Copy pasted LOL 🤓☝️ - nebula
+			todoLabel.width = helpTabs.width;
+			var lines = [
+				"To-Do:", 
+				"",
+				"-- Additions --",
+				"",
+				"",
+				"--   Fixes   --",
+				""
+			];
+			for (i in lines) {
+				todoLabel.text += i + "\n";
+				todoLabel.text = StringTools.replace(todoLabel.text, "null", "");
+			}
+			todoTab.addComponent(todoLabel);
+	
+			var discordTab = new VBox();
+			discordTab.text = 'Discord';
+			helpTabs.addComponent(discordTab);
+	
+	
+			var novaEditorServer = new Label();
+			novaEditorServer.text = "Nova Editor Server:\nhttps://discord.gg/MTMRYc63Dj";
+			discordTab.addComponent(novaEditorServer);
+	
+			var launchNovaServer = new Button();
+			launchNovaServer.text = "Join Server"; 
+			launchNovaServer.allowInteraction = true;
+			launchNovaServer.onClick = ()->{
+				FlxG.openURL("https://discord.gg/MTMRYc63Dj");
+			}
+			//launchNovaServer.marginTop = 35;
+			discordTab.addComponent(launchNovaServer);
+	
+			var vSliceNetworkServer = new Label();
+			vSliceNetworkServer.text = "\nV-Slice Network:\nhttps://discord.gg/6ja4A7qtJc";
+			discordTab.addComponent(vSliceNetworkServer);
+	
+			var launchVSliceServer = new Button();
+			launchVSliceServer.text = "Join Server"; 
+			launchVSliceServer.allowInteraction = true;
+			launchVSliceServer.onClick = ()->{
+				FlxG.openURL("https://discord.gg/6ja4A7qtJc");
+			}
+			//launchNovaServer.marginTop = 35;
+			discordTab.addComponent(launchVSliceServer);
+	
+			var thanksLabel = new Label();
+			thanksLabel.text = "\n\nHUGE Thanks To V-Slice Network for providing tips when I was \ncoding this.\n- Nebula S. Nova";
+			discordTab.addComponent(thanksLabel);
+						
+			helpWindow.addComponent(helpTabs);
+		} else {
+			windowManager.closeWindow(helpWindow);
+		}
 	}
 
 	function openSound() {
@@ -1078,6 +1452,47 @@ class CharacterEditorV2 extends MusicBeatState {
 	function update(event) {
 		super.update(event);
 		get_conductorInUse().update();
+
+		var debugIndex = 0;
+		var offset = 0;
+		for (i in debugTexts) {
+			i.visible = true;
+			if (i.alpha == 0) {
+				debugTexts.remove(i);
+			} else {
+				var daIndex = (debugTexts.length-1)-debugIndex;
+				i.y = 40 + (30*(daIndex-offset));
+			}
+			debugIndex++;
+		}
+
+		if (FlxG.keys.justPressed.F1) {
+			openUserGuide();
+		}
+
+		if (FlxG.keys.justPressed.S && FlxG.keys.pressed.CONTROL) {
+			if (FlxG.keys.pressed.SHIFT) {
+				saveCharacterAs();
+			} else {
+				saveCharacter();
+			}
+		}
+
+		if (FlxG.keys.pressed.CONTROL) {
+			if (FlxG.keys.justPressed.U){
+				checkForUpdates();
+			}
+			if (FlxG.keys.justPressed.Q){
+				FlxG.switchState(new MainMenuState());
+			}
+			if (FlxG.keys.justPressed.R && FlxG.keys.pressed.SHIFT) {
+				cameraTarget.zoom = 0.7;
+				cameraTarget.x = 0;
+				cameraTarget.y = 0;
+			}
+		}
+
+
 		if (animationList != null) {
 			animationList.focus = false;
 		}
@@ -1177,15 +1592,15 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		if (characterSprite != null) {
-			if (!FlxG.mouse.overlaps(characterSprite)) {
+			//if (!FlxG.mouse.overlaps(characterSprite)) {
 				if (FlxG.mouse.pressed) {
-					cameraTarget.x -= FlxG.mouse.deltaX;
-					cameraTarget.y -= FlxG.mouse.deltaY;
+					cameraTarget.x -= FlxG.mouse.deltaX/FlxG.camera.zoom;
+					cameraTarget.y -= FlxG.mouse.deltaY/FlxG.camera.zoom;
 				}
 				
-			} else {
+			//} else {
 				
-			}
+			//}
 		}
 
 		if (FlxG.keys.pressed.W) {
@@ -1199,8 +1614,22 @@ class CharacterEditorV2 extends MusicBeatState {
 		} else if (FlxG.keys.pressed.E) {
 			cameraTarget.zoom += shiftAmount/1000;
 		}
+		cameraTarget.zoom += FlxG.mouse.wheel/10;
 		if (cameraTarget.zoom < 0.01) {
 			cameraTarget.zoom = 0.01;
+		}
+
+		
+
+		if (editAnimWindow != null) {
+			editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width - 5;
+			editAnimWindow.y = 46;
+			editAnimWindow.width = 250;
+			editAnimWindow.height = 270;
+			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
+			characterInfoWindow.y = 46;
+			characterInfoWindow.width = 250;
+			characterInfoWindow.height = 620;
 		}
 	}
 

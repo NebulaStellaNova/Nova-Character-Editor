@@ -1,6 +1,6 @@
 {
   "music": "freakyMenu",
-  "title": "Nova Character Editor",
+  "title": "Nova Character Editor REFRESHED",
   "description": "An actually good character editor.",
   "contributors": [
 	  {
@@ -9,9 +9,16 @@
       "color": "#9500ff",
       "roles": "Coder",
       "url": "https://www.youtube.com/@ChinosModded"
+    },
+	  {
+        "name": "GENZU",
+        "icon": "genzu",
+        "color": "#ff9ecf",
+        "roles": "Coded like a lot",
+        "url": "https://www.youtube.com/@_genzu"
     }
   ],
   "api_version": "0.6.4",
-  "mod_version": "1.0.0",
+  "mod_version": "0.1.0",
   "license": "Apache 2.0"
 }
