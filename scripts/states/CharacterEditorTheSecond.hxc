@@ -132,6 +132,8 @@ class CharacterEditorV2 extends MusicBeatState {
 	var animFlipXCheckBox;
 	var animFlipYCheckBox;
 	var loopCheckBox;
+	var songList;
+	var songMetaLabel;
 	// ----------------- \\
 
 	var curAnim;
@@ -533,6 +535,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		return path;
 	}
 
+	var realSongList = [];
+
 	function create() {
 		super.create();
 
@@ -557,7 +561,8 @@ class CharacterEditorV2 extends MusicBeatState {
 			}
 		}
 
-
+		FunkinSound.playMusic(save.data.editorSong.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+		FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
 		
 		enableAutoPause();
 		WindowUtil.setWindowTitle("Friday Night Funkin' - Nova Character Editor");
@@ -779,6 +784,99 @@ class CharacterEditorV2 extends MusicBeatState {
 				save.data.uiColor = uiColorPicker.currentColor;
 			}
 			uiColorPickerBox.addComponent(uiColorPicker);
+
+			var musicBox = new Box();
+			musicBox.text = 'Music';
+			preferenceTabs.addComponent(musicBox);
+
+			songList = new DropDown();
+			songList.text = save.data.editorSong.title;
+			songList.searchable = true;
+			songList.width = 500;
+
+			songMetaLabel = new Label();
+			songMetaLabel.marginTop = 30;
+
+			for (file in FileUtil.readDir("assets/shared/music/")) {
+				var metaPath = "assets/shared/music/" + file + "/" + file + "-metadata.json";
+				var songMeta;
+				if (FileUtil.fileExists(metaPath)) {
+					songMeta = parseJsonFile(metaPath);
+				} else {
+					songMeta = { songName: file, artist: "???", timeChanges: [{bpm: "???"}] };
+				}
+				realSongList.push({
+					id: file,
+					meta: songMeta
+				});
+			}
+			for (file in FileUtil.readDir("assets/music/")) {
+				var songMeta = parseJsonFile("assets/music/" + file + "/" + file + "-metadata.json");
+				realSongList.push({
+					id: file,
+					meta: songMeta
+				});
+			}
+			for (mod in PolymodHandler.getAllMods()) {
+				if (FileUtil.directoryExists("mods/" + mod + "/music/")) {
+					for (file in FileUtil.readDir("mods/" + mod + "/music/")) {
+						var songMeta = parseJsonFile("mods/" + mod + "/" + file + "/" + file + "-metadata.json");
+						realSongList.push({
+							id: file,
+							meta: songMeta
+						});
+					}
+				}
+				if (FileUtil.directoryExists("mods/" + mod + "/music/")) {
+					for (file in FileUtil.readDir("mods/" + mod + "/music/")) {
+						var songMeta = parseJsonFile("mods/" + mod + "/" + file + "/" + file + "-metadata.json");
+						realSongList.push({
+							id: file,
+							meta: songMeta
+						});
+					}
+				}
+			}
+
+			for (song in realSongList) {
+				songList.dataSource.add({text: song.meta.songName});
+			}
+			songList.onChange = ()->{
+				for (songData in realSongList) {
+					if (songList != null) {
+						if (songData.meta.songName == songList.text) {
+							save.data.editorSong.title = songData.meta.songName;
+							save.data.editorSong.key = songData.id;
+							songMetaLabel.text = "Song Name: " + songData.meta.songName;
+							if (songData.meta.artist != null) {
+								songMetaLabel.text +=  "\nComposed By: " + songData.meta.artist;
+							} 
+							if (songData.meta.timeChanges != null) {
+								songMetaLabel.text += "\n\nBPM: " + songData.meta.timeChanges[0].bpm;
+							}
+							FunkinSound.playMusic(songData.id, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
+							FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
+						}
+					}
+				}
+				
+			}
+
+			musicBox.addComponent(songList);
+			songMetaLabel.text = "Song Name: ??";
+			musicBox.addComponent(songMetaLabel);
+
+			for (songData in realSongList) {
+				if (songData.meta.songName == save.data.editorSong.title) {
+					songMetaLabel.text = "Song Name: " + songData.meta.songName;
+					if (songData.meta.artist != null) {
+						songMetaLabel.text +=  "\nComposed By: " + songData.meta.artist;
+					} 
+					if (songData.meta.timeChanges != null) {
+						songMetaLabel.text += "\n\nBPM: " + songData.meta.timeChanges[0].bpm;
+					}
+				}
+			}
 
 		}
 		fileMenu.addComponent(preferencesItem);
