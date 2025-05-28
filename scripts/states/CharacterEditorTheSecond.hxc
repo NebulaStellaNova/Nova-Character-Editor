@@ -1200,6 +1200,12 @@ class CharacterEditorV2 extends MusicBeatState {
 	var editAnimWindow;
 
 	function openAnimEditWindow() {
+		var curAnim;
+		for (i in curCharacterData.character.animations) {
+			if (i.name == characterSprite.animation.name) {
+				curAnim = i;
+			}
+		}
 		
 		if (editAnimWindow == null || !editAnimWindow.visible) {
 
