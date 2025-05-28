@@ -112,6 +112,8 @@ class CharacterEditorV2 extends MusicBeatState {
 	var save = new FlxSave();
 	
 
+	var enableBetaFeatures = false;
+
 	var cameraTarget = {
 		x: 0,
 		y: 0,
@@ -382,7 +384,9 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			var uiColorPickerBox = new Box();
 			uiColorPickerBox.text = 'UI Color';
-			preferenceTabs.addComponent(uiColorPickerBox);
+			if (enableBetaFeatures) {
+				preferenceTabs.addComponent(uiColorPickerBox);
+			}
 
 			var uiColorPicker = new ColorPicker();
 			uiColorPicker.currentColor = save.data.uiColor;
@@ -954,8 +958,10 @@ class CharacterEditorV2 extends MusicBeatState {
 			var classArray = ReflectUtil.getClassNameOf(i).split(".");
 			var theClass = classArray[classArray.length-1];
 			if (!blackList.contains(theClass)) {
-				i.color = uiColor;
-				childCheck(i);
+				if (enableBetaFeatures) {
+					i.color = uiColor;
+					childCheck(i);
+				}
 			}
 		}
 
