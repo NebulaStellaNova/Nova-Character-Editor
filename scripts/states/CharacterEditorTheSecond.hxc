@@ -81,6 +81,7 @@ import flixel.text.FlxText;
 import flixel.text.FlxTextBorderStyle;
 
 import flixel.tweens.FlxTween;
+import funkin.modding.base.ScriptedMusicBeatState;
 
 class CharacterEditorV2 extends MusicBeatState {
 
@@ -482,18 +483,52 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		openSound();
 	}
+	
+	function newCharacterAs(name) {
+		disableAutoPause();
+		tempChar = parseJsonFile(currentFolder + "/data/config/templateCharacter.json");
+		tempChar.name = name;
+		FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
+			trace(fixPath(path));
+			writeCharacterFile(fixPath(path), tempChar);
+			enbaleAutoPause();
+			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
+		}, enbaleAutoPause, name);
+	}
 
 	function saveCharacterAs() {
+		disableAutoPause();
 		FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
 			trace(fixPath(path));
 			writeCharacterFile(fixPath(path), curCharacterData.character);
 			//FlxG.switchState(ScriptedMusicBeatState.init('CharacterEdotirV2')); // I spell very good - nebula
+			enbaleAutoPause();
 			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
-		}, null, curCharacterData.fileName);
+		}, 	enbaleAutoPause, curCharacterData.fileName);
+	}
+
+	var currentFolder = "??";
+
+	function fixPath(path) {
+		var stringSplit = path.split("\\");
+		while (stringSplit[0] != "mods") {
+			stringSplit.shift();
+		}
+		path = stringSplit.join("/");
+		return path;
 	}
 
 	function create() {
 		super.create();
+
+		for (mod in PolymodHandler.getAllMods()) {
+			var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
+			if (meta.title == editorTitle) {
+				currentFolder = "mods/" + mod.id;
+				break;
+			}
+		}
+
 		save.bind("nova-editors", "NebulaStellaNova");
 		if(save.data.editorSong == null) {
 			save.data.editorSong = {
@@ -586,7 +621,60 @@ class CharacterEditorV2 extends MusicBeatState {
 		newItem.text = 'New';
 		newItem.shortcutText = 'Ctrl + N';
 		newItem.onClick = () -> {
+			var newWindow = new Window();
+			newWindow.title = "Create Character";
+			newWindow.maximizable = false;
+			newWindow.minimizable = false;
+			newWindow.collapsable = false;
+			newWindow.windowManager = windowManager;
+			newWindow.width = 300;
+			newWindow.height = 130;
+
+			var stageData = {
+				name: ""
+			}
 			
+			var name = new TextField();
+			name.placeholder = "New Character";
+			name.color = 0xFFaaaaaa;
+			name.onChange = ()->{
+				stageData.name = name.text;
+				name.color = 0xFFaaaaaa;
+			}
+				
+			var nameBox = new HBox();
+
+			var nameLabel = new Label();
+			nameLabel.text = "Name:";
+			nameLabel.marginTop = 6;
+			nameBox.addComponent(nameLabel);
+			
+			nameBox.addComponent(name);
+			
+			newWindow.addComponent(nameBox);
+			
+			var confirmButton = new Button();
+			confirmButton.text = "Confirm";
+			confirmButton.marginTop = 3;
+			confirmButton.marginLeft = newWindow.width - 105;
+			newWindow.addComponent(confirmButton);
+
+			newWindow.screenCenter();
+			add(newWindow);
+			FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+
+			confirmButton.onClick = ()->{
+				trace(name.text);
+				if (name.text != "" && name.text != null) {
+					newCharacterAs(name.text);
+					windowManager.closeWindow(newWindow);
+				} else {
+					if (name.text == "" || name.text == null) {
+						name.color = 0xFFFF0000;
+					}
+				}
+			}
+			// saveStage();
 		}
 		fileMenu.addComponent(newItem);
 
@@ -616,7 +704,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		saveAsItem.text = 'Save As';
 		saveAsItem.shortcutText = 'Ctrl + Shift + S';
 		saveAsItem.onClick = () -> {
-
+			saveCharacterAs();
 		}
 		fileMenu.addComponent(saveAsItem);
 		
@@ -1454,6 +1542,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			keybindText.marginTop = 25;
 			keybindText.allowInteraction = false;
 			keybindText.width = helpTabs.width - 16;
+			keybindText.height = helpTabs.height - 68;
 			keybindText.onChange = ()->{
 				keybindText.selectedItem = null;
 				keybindText.selectedItems = [];
@@ -1473,6 +1562,10 @@ class CharacterEditorV2 extends MusicBeatState {
 			keybindText.dataSource.add( {text: "                    -- Editor Controls --"} );
 			keybindText.dataSource.add( {text: "Move Camera                     W, A, S, D, Left Click + Drag"} );
 			keybindText.dataSource.add( {text: "Zoom Camera                     Q, E, Mouse Wheel"} );
+			keybindText.dataSource.add( {text: "Play Animation                  Click Animation Name"} );
+			keybindText.dataSource.add( {text: "Play Onion Animation            Ctrl + Click Animation Name"} );
+			keybindText.dataSource.add( {text: "Play Sing Animation             I, J, K, L"} );
+			keybindText.dataSource.add( {text: "Play Alt Sing Animation         Shift + I, J, K, L"} );
 			helpTabBarShortcuts.addComponent(keybindText);
 	
 			var helpTabExtra = new ScrollView();
