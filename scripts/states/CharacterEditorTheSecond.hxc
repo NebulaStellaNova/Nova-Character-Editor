@@ -448,7 +448,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterInfoWindow.minimizable = false;
 			characterInfoWindow.collapsable = false;
 			characterInfoWindow.width = 250;
-			characterInfoWindow.height = 590;
+			characterInfoWindow.height = 620;
 			characterInfoWindow.screenCenter();
 			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
 			characterInfoWindow.y = topBar.height + 10;
@@ -529,9 +529,13 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			charScaleStepper = new NumberStepper();
 			charScaleStepper.color = 0xFFaaaaaa;
+			charScaleStepper.min = 0.1;
+			charScaleStepper.step = 0.1;
 			charScaleStepper.width = 165;
-			charScaleStepper.pos = curCharacterData.character.scale;
+			charScaleStepper.pos = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
 			charScaleStepper.onChange = ()->{
+				// NIGGER CODE BRO FUCK - genzu
+				curCharacterData.character.scale = curCharacterData.character.scale != null ? curCharacterData.character.scale : 1;
 				curCharacterData.character.scale = charScaleStepper.pos;
 			}
 			charScaleBox.addComponent(charScaleStepper);
@@ -549,6 +553,20 @@ class CharacterEditorV2 extends MusicBeatState {
 			singTimeStepper.width = 138;
 			singTimeStepper.pos = curCharacterData.character.singTime;
 			singTimeBox.addComponent(singTimeStepper);
+
+			var danceEveryBox = new HBox();
+			characterInfoWindow.addComponent(danceEveryBox);
+
+			var danceEveryLabel = new Label();
+			danceEveryLabel.text = 'Dance Interval:';
+			danceEveryLabel.marginTop = 6;
+			danceEveryBox.addComponent(danceEveryLabel);
+
+			danceEveryStepper = new NumberStepper();
+			danceEveryStepper.color = 0xFFaaaaaa;
+			danceEveryStepper.width = 103;
+			danceEveryStepper.pos = curCharacterData.character.danceEvery;
+			danceEveryBox.addComponent(danceEveryStepper);
 
 			charOffsetsBox = new HBox();
 			characterInfoWindow.addComponent(charOffsetsBox);
@@ -631,7 +649,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				// prefix.text = animationList.selectedItem.text;
 			}
 			animationList.width = 215;
-			animationList.height = 200;
+			animationList.height = 175;
 			animationList.marginTop = 6;
 			characterInfoWindow.addComponent(animationList);
 
