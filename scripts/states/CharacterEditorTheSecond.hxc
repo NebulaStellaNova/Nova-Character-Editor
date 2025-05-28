@@ -1,3 +1,5 @@
+import Xml;
+
 import haxe.Json;
 import StringTools;
 import flixel.FlxG;
@@ -81,9 +83,18 @@ import flixel.text.FlxText;
 import flixel.text.FlxTextBorderStyle;
 
 import flixel.tweens.FlxTween;
+
 import funkin.modding.base.ScriptedMusicBeatState;
 
+import funkin.modding.module.ModuleHandler;
+
+import openfl.net.FileFilter;
+
 class CharacterEditorV2 extends MusicBeatState {
+    var FILE_FILTER_XML:FileFilter = new FileFilter("Codename Character File", "*.xml");
+	// -- Classes -- \\
+	var Converters;
+	// ------------- \\
 
 	// -- Editor Info -- \\
 	var editorVersion = "v0.1.0";
@@ -97,8 +108,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 	];
 	// ----------------- \\
-
-	// -- UI Elements \\
+	
+	// -- UI Elements -- \\
 	var animationList; 			// Asigned to variables because caused issue
 	var charName;
 	var assetPath;
@@ -118,6 +129,10 @@ class CharacterEditorV2 extends MusicBeatState {
 	var isPixelCheckbox;
 	var iconPreview;
 	var animAssetPath;
+	var animFlipXCheckBox;
+	var animFlipYCheckBox;
+	var loopCheckBox;
+	// ----------------- \\
 
 	var curAnim;
 
@@ -491,9 +506,9 @@ class CharacterEditorV2 extends MusicBeatState {
 		FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
 			trace(fixPath(path));
 			writeCharacterFile(fixPath(path), tempChar);
-			enbaleAutoPause();
+			enableAutoPause();
 			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
-		}, enbaleAutoPause, name);
+		}, enableAutoPause, name);
 	}
 
 	function saveCharacterAs() {
@@ -502,9 +517,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			trace(fixPath(path));
 			writeCharacterFile(fixPath(path), curCharacterData.character);
 			//FlxG.switchState(ScriptedMusicBeatState.init('CharacterEdotirV2')); // I spell very good - nebula
-			enbaleAutoPause();
+			enableAutoPause();
 			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
-		}, 	enbaleAutoPause, curCharacterData.fileName);
+		}, 	enableAutoPause, curCharacterData.fileName);
 	}
 
 	var currentFolder = "??";
@@ -520,6 +535,8 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	function create() {
 		super.create();
+
+        Converters = ModuleHandler.getModule("NovaConverters");
 
 		for (mod in PolymodHandler.getAllMods()) {
 			var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
@@ -542,7 +559,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 
 		
-		enbaleAutoPause();
+		enableAutoPause();
 		WindowUtil.setWindowTitle("Friday Night Funkin' - Nova Character Editor");
 
 		characterData.push({
@@ -864,7 +881,19 @@ class CharacterEditorV2 extends MusicBeatState {
 		psychConvertItem.text = 'Psych to V-Slice';
 		psychConvertItem.shortcutText = '';
 		psychConvertItem.onClick = () -> {
-
+			disableAutoPause();
+			FileUtil.browseForTextFile("Select Psych Engine Character File", [FileUtil.FILE_FILTER_JSON], (data)->{
+				var convertedFile = Converters.scriptCall("charFromPsych", [Json.parse(data.text)]);
+				var daName = StringTools.replace(data.name, ".json");
+				var daNameArray = daName.split('');
+				daNameArray[0] = daNameArray[0].toUpperCase();
+				convertedFile.name = daNameArray.join('');
+				FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (destPath)->{
+					writeCharacterFile(fixPath(destPath), convertedFile);
+					enableAutoPause();
+					FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
+				}, enableAutoPause, data.name);
+			});
 		}
 		convertersMenu.addComponent(psychConvertItem);
 		
@@ -872,7 +901,20 @@ class CharacterEditorV2 extends MusicBeatState {
 		codenameConvertItem.text = 'Codename to V-Slice';
 		codenameConvertItem.shortcutText = '';
 		codenameConvertItem.onClick = () -> {
-
+			disableAutoPause();
+			FileUtil.browseForTextFile("Select Codename Engine Character File", [FILE_FILTER_XML], (data)->{
+				var convertedFile = Converters.scriptCall("charFromCNE", [Xml.parse(data.text)]);
+				trace(convertedFile);
+				var daName = StringTools.replace(data.name, ".xml");
+				var daNameArray = daName.split('');
+				daNameArray[0] = daNameArray[0].toUpperCase();
+				convertedFile.name = daNameArray.join('');
+				FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (destPath)->{
+					writeCharacterFile(fixPath(destPath), convertedFile);
+					enableAutoPause();
+					FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
+				}, enableAutoPause, StringTools.replace(data.name, ".xml", ".json"));
+			});
 		}
 		convertersMenu.addComponent(codenameConvertItem);
 
@@ -1241,6 +1283,18 @@ class CharacterEditorV2 extends MusicBeatState {
 				if (animAssetPath != null) {
 					animAssetPath.text = StringTools.replace(curAnim.assetPath, "characters/", "");
 				}
+				if (loopCheckBox != null) {
+					if (curAnim.looped == null) {
+						curAnim.looped = false;
+					}
+					loopCheckBox.selected = curAnim.looped;
+				}
+				if (animFlipXCheckBox != null) {
+					//animFlipXCheckBox.selected = curAnim.flipX != null ? curAnim.flipX : false;
+				}
+				if (animFlipYCheckBox != null) {
+					//animFlipYCheckBox.selected = curAnim.flipY != null ? curAnim.flipY : false;
+				}
 				// prefix.text = animationList.selectedItem.text;
 			}
 			animationList.width = 215;
@@ -1448,9 +1502,16 @@ class CharacterEditorV2 extends MusicBeatState {
 			animFlipX.marginTop = 5;
 			animflipXBox.addComponent(animFlipX);
 
-			var animFlipXCheckBox = new CheckBox();
+			animFlipXCheckBox = new CheckBox();
 			animFlipXCheckBox.marginTop = 5;
 			animFlipXCheckBox.color = 0xFFaaaaaa;
+			animFlipXCheckBox.onChange = ()->{
+				for (i in curCharacterData.character.animation) {
+					if (i.name == characterSprite.animation.name) {
+						i.flipX = animFlipXCheckBox.selected;
+					}
+				}
+			}
 			animflipXBox.addComponent(animFlipXCheckBox);
 
 			var animFlipY = new Label();
@@ -1458,9 +1519,16 @@ class CharacterEditorV2 extends MusicBeatState {
 			animFlipY.marginTop = 5;
 			animflipXBox.addComponent(animFlipY);
 
-			var animFlipYCheckBox = new CheckBox();
+			animFlipYCheckBox = new CheckBox();
 			animFlipYCheckBox.marginTop = 5;
 			animFlipYCheckBox.color = 0xFFaaaaaa;
+			animFlipYCheckBox.onChange = ()->{
+				for (i in curCharacterData.character.animation) {
+					if (i.name == characterSprite.animation.name) {
+						i.flipY = animFlipYCheckBox.selected;
+					}
+				}
+			}
 			animflipXBox.addComponent(animFlipYCheckBox);
 
 			var loopBox = new HBox();
@@ -1472,9 +1540,16 @@ class CharacterEditorV2 extends MusicBeatState {
 			loopLabel.marginTop = 5;
 			loopBox.addComponent(loopLabel);
 
-			var loopCheckBox = new CheckBox();
+			loopCheckBox = new CheckBox();
 			loopCheckBox.marginTop = 5;
 			loopCheckBox.color = 0xFFaaaaaa;
+			loopCheckBox.onChange = ()->{
+				for (i in curCharacterData.character.animation) {
+					if (i.name == characterSprite.animation.name) {
+						i.looped = loopCheckBox.selected;
+					}
+				}
+			}
 			loopBox.addComponent(loopCheckBox);
 		} else {
 			windowManager.closeWindow(editAnimWindow);
@@ -1928,7 +2003,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		var curStep = get_conductorInUse().currentStep;
 	}
 
-	function enbaleAutoPause() {
+	function enableAutoPause() {
 		FlxG.autoPause = false;
 	}
 
