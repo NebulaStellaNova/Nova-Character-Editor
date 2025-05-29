@@ -2020,12 +2020,6 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		var shiftAmount = FlxG.keys.pressed.SHIFT ? 15 : 5;
 
-		if (FlxG.keys.pressed.A) {
-			cameraTarget.x -= shiftAmount;
-		} else if (FlxG.keys.pressed.D) {
-			cameraTarget.x += shiftAmount;
-		}
-
 		var directionKeys = [
 			FlxG.keys.justPressed.J,
 			FlxG.keys.justPressed.K,
@@ -2068,10 +2062,18 @@ class CharacterEditorV2 extends MusicBeatState {
 			//}
 		}
 
-		if (FlxG.keys.pressed.W) {
-			cameraTarget.y -= shiftAmount;
-		} else if (FlxG.keys.pressed.S) {
-			cameraTarget.y += shiftAmount;
+		if (!FlxG.keys.pressed.CONTROL) {
+			if (FlxG.keys.pressed.W) {
+				cameraTarget.y -= shiftAmount;
+			} else if (FlxG.keys.pressed.S) {
+				cameraTarget.y += shiftAmount;
+			}
+			if (FlxG.keys.pressed.A) {
+				cameraTarget.x -= shiftAmount;
+			} else if (FlxG.keys.pressed.D) {
+				cameraTarget.x += shiftAmount;
+			}
+
 		}
 
 		if (FlxG.keys.pressed.Q) {
