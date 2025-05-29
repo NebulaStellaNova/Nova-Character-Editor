@@ -272,7 +272,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var updateButton = new Button();
 				updateButton.text = "Open GameBanana";
-				updateButton.color = 0xFFaaaaaa;
+				updateButton.color = 0xFFAAAAAA;
 				updateButton.marginTop = 5;
 				updateButton.onClick = ()->{
 					debugPrint("Uh! Ooooh... No GameBanana For Youuuuu.");
@@ -284,7 +284,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				var downloadButton = new Button();
 				downloadButton.text = "Download/Install Update";
 				downloadButton.marginTop = 5;
-				downloadButton.color = 0xFFaaaaaa;
+				downloadButton.color = 0xFFAAAAAA;
 				downloadButton.onClick = ()->{
 					downloadLatestVersion();
 				}
@@ -292,7 +292,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var closeButton = new Button();
 				closeButton.text = "Close";
-				closeButton.color = 0xFFaaaaaa;
+				closeButton.color = 0xFFAAAAAA;
 				closeButton.marginTop = 3;
 				closeButton.marginLeft = updateWindow.width - 90;
 				updateWindow.addComponent(closeButton);
@@ -323,7 +323,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				closeButton.text = "Close";
 				closeButton.marginTop = 3;
 				closeButton.marginLeft = updateWindow.width - 90;
-				closeButton.color = 0xFFaaaaaa;
+				closeButton.color = 0xFFAAAAAA;
 				updateWindow.addComponent(closeButton);
 
 				updateWindow.screenCenter();
@@ -658,10 +658,10 @@ class CharacterEditorV2 extends MusicBeatState {
 			
 			var name = new TextField();
 			name.placeholder = "New Character";
-			name.color = 0xFFaaaaaa;
+			name.color = 0xFFAAAAAA;
 			name.onChange = ()->{
 				stageData.name = name.text;
-				name.color = 0xFFaaaaaa;
+				name.color = 0xFFAAAAAA;
 			}
 				
 			var nameBox = new HBox();
@@ -683,7 +683,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			newWindow.screenCenter();
 			add(newWindow);
-			FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
+			// FunkinSound.playOnce(Paths.sound("chartingSounds/openWindow"), 1);
 
 			confirmButton.onClick = ()->{
 				trace(name.text);
@@ -1128,7 +1128,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			isPixelCheckbox = new CheckBox();
 			isPixelCheckbox.selected = curCharacterData.character.healthIcon != null ? (curCharacterData.character.healthIcon.isPixel != null ? curCharacterData.character.healthIcon.isPixel : false) : false;
-			isPixelCheckbox.color = 0xFFaaaaaa;			
+			isPixelCheckbox.color = 0xFFAAAAAA;			
 			isPixelCheckbox.onChange = ()->{
 				if (curCharacterData.character.healthIcon == null) {
 					curCharacterData.character.healthIcon = {
@@ -1141,7 +1141,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			isPixelBox.addComponent(isPixelCheckbox);
 
 			var iconBox = new Box();
-			iconBox.color = 0xFFaaaaaa;
+			iconBox.color = 0xFFAAAAAA;
 			iconWindow.addComponent(iconBox);
 
 			iconPreview = new Image();
@@ -1180,7 +1180,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterList.text = "Pick Character";
 			characterList.searchable = true;
 			characterList.width = 215;
-			characterList.color = 0xFFaaaaaa;
+			characterList.color = 0xFFAAAAAA;
 			for (i in characterData) {
 				characterList.dataSource.add({text: i.character.name});
 			}
@@ -1206,8 +1206,11 @@ class CharacterEditorV2 extends MusicBeatState {
 			charName = new TextField();
 			charName.placeholder = 'Character';
 			charName.text = curCharacterData.character.name;
-			charName.color = 0xFFaaaaaa;
+			charName.color = 0xFFAAAAAA;
 			charName.width = 172;
+			charName.onChange = ()->{
+				curCharacterData.character.name = charName.text;
+			}
 			nameBox.addComponent(charName);
 	
 			var assetPathBoxBox = new HBox();
@@ -1222,8 +1225,18 @@ class CharacterEditorV2 extends MusicBeatState {
 			assetPath.placeholder = '';
 			assetPath.text = StringTools.replace(curCharacterData.character.assetPath, "characters/", "");
 			// assetPath.marginTop = 5;
-			assetPath.color = 0xFFaaaaaa;
+			assetPath.color = 0xFFAAAAAA;
 			assetPath.width = 130;
+			assetPath.onChange = ()->{
+				curCharacterData.character.assetPath = "characters/" +assetPath.text;
+				if (checkFileExists(Paths.image('characters/' + assetPath.text))){
+					// idk how TF to make this work, u fix it nebula!!
+					// loadCharacter(curCharacterData);
+					assetPath.color = 0xFFAAAAAA;
+				} else {
+					assetPath.color = 0xFFFF0000;
+				}
+			}
 			assetPathBoxBox.addComponent(assetPath);
 	
 			var renderTypeBox = new HBox();
@@ -1238,7 +1251,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			renderType.placeholder = 'sparrow';
 			renderType.text = curCharacterData.character.renderType != null ? curCharacterData.character.renderType : "sparrow";
 			// assetPath.marginTop = 5;
-			renderType.color = 0xFFaaaaaa;
+			renderType.color = 0xFFAAAAAA;
 			renderType.width = 123;
 			renderTypeBox.addComponent(renderType);
 	
@@ -1251,7 +1264,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			charScaleBox.addComponent(charScaleLabel);
 	
 			charScaleStepper = new NumberStepper();
-			charScaleStepper.color = 0xFFaaaaaa;
+			charScaleStepper.color = 0xFFAAAAAA;
 			charScaleStepper.min = 0.1;
 			charScaleStepper.step = 0.1;
 			charScaleStepper.width = 165;
@@ -1273,7 +1286,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			singTimeBox.addComponent(singTimeLabel);
 	
 			singTimeStepper = new NumberStepper();
-			singTimeStepper.color = 0xFFaaaaaa;
+			singTimeStepper.color = 0xFFAAAAAA;
 			singTimeStepper.width = 138;
 			singTimeStepper.pos = curCharacterData.character.singTime;
 			singTimeBox.addComponent(singTimeStepper);
@@ -1287,7 +1300,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			danceEveryBox.addComponent(danceEveryLabel);
 	
 			danceEveryStepper = new NumberStepper();
-			danceEveryStepper.color = 0xFFaaaaaa;
+			danceEveryStepper.color = 0xFFAAAAAA;
 			danceEveryStepper.width = 103;
 			danceEveryStepper.pos = curCharacterData.character.danceEvery != null ? curCharacterData.character.danceEvery : 1;
 			danceEveryStepper.onChange = ()->{
@@ -1304,13 +1317,13 @@ class CharacterEditorV2 extends MusicBeatState {
 			charOffsetsBox.addComponent(charOffsetLabel);
 	
 			charStepperX = new NumberStepper();
-			charStepperX.color = 0xFFaaaaaa;
+			charStepperX.color = 0xFFAAAAAA;
 			charStepperX.width = 65;
 			charStepperX.marginLeft = 17;
 			charOffsetsBox.addComponent(charStepperX);
 	
 			charStepperY = new NumberStepper();
-			charStepperY.color = 0xFFaaaaaa;
+			charStepperY.color = 0xFFAAAAAA;
 			charStepperY.marginLeft = 17;
 			charStepperY.width = 65;
 			charOffsetsBox.addComponent(charStepperY);
@@ -1408,7 +1421,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			animEditButton.text = 'Edit Animation';
 			animEditButton.marginTop = 5;
 			animEditButton.width = 215;
-			animEditButton.color = 0xFFaaaaaa;
+			animEditButton.color = 0xFFAAAAAA;
 			animEditButton.onClick = ()->{
 				openSound();
 				openAnimEditWindow();
@@ -1422,14 +1435,14 @@ class CharacterEditorV2 extends MusicBeatState {
 			createAnimButton.width = 105;
 			createAnimButton.marginTop = 5;
 			createAnimButton.text = 'New Anim';
-			createAnimButton.color = 0xFFaaaaaa;
+			createAnimButton.color = 0xFFAAAAAA;
 			createDeleteButtonBox.addComponent(createAnimButton);
 	
 			var deleteAnimButton = new Button();
 			deleteAnimButton.width = 105;
 			deleteAnimButton.marginTop = 5;
 			deleteAnimButton.text = 'Delete Anim';
-			deleteAnimButton.color = 0xFFaaaaaa;
+			deleteAnimButton.color = 0xFFAAAAAA;
 			deleteAnimButton.onClick = ()->{
 				for (anim in curCharacterData.character.animations) {
 					if (anim.name == characterSprite.animation.name) {
@@ -1490,7 +1503,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			animName.placeholder = "Animation Name";
 			animName.text = characterSprite.animation.name;
 			animName.width =  175;
-			animName.color = 0xFFaaaaaa;
+			animName.color = 0xFFAAAAAA;
 			animNameBox.addComponent(animName);
 
 			prefixBox = new HBox();
@@ -1504,7 +1517,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			prefix = new TextField();
 			prefix.placeholder = "None";
 			prefix.width =  161;
-			prefix.color = 0xFFaaaaaa;
+			prefix.color = 0xFFAAAAAA;
 			prefix.text = curAnim.prefix;
 			prefix.onChange = ()->{
 
@@ -1522,7 +1535,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			indices = new TextField();
 			indices.placeholder = "Coming Soon";
 			indices.width =  154;
-			indices.color = 0xFFaaaaaa;
+			indices.color = 0xFFAAAAAA;
 			indices.onChange = ()->{
 				/* if (indices.text != "") {
 					curAnim.indices = [];
@@ -1544,7 +1557,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			animOffsetsBox.addComponent(aninOffsetLabel);
 
 			animStepperX = new NumberStepper();
-			animStepperX.color = 0xFFaaaaaa;
+			animStepperX.color = 0xFFAAAAAA;
 			animStepperX.width = 65;
 			animStepperX.marginLeft = 20;
 			animStepperX.onChange = ()->{
@@ -1557,7 +1570,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			animOffsetsBox.addComponent(animStepperX);
 
 			animStepperY = new NumberStepper();
-			animStepperY.color = 0xFFaaaaaa;
+			animStepperY.color = 0xFFAAAAAA;
 			animStepperY.marginLeft = 20;
 			animStepperY.width = 65;
 			animStepperY.onChange = ()->{
@@ -1580,7 +1593,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			animAssetPath = new TextField();
 			animAssetPath.placeholder = 'None';
 			// assetPath.marginTop = 5;
-			animAssetPath.color = 0xFFaaaaaa;
+			animAssetPath.color = 0xFFAAAAAA;
 			animAssetPath.width = 135;
 			animAssetPath.onChange = ()->{
 				for (i in curCharacterData.character.animations) {
@@ -1603,7 +1616,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			animFlipXCheckBox = new CheckBox();
 			animFlipXCheckBox.marginTop = 5;
-			animFlipXCheckBox.color = 0xFFaaaaaa;
+			animFlipXCheckBox.color = 0xFFAAAAAA;
 			animFlipXCheckBox.onChange = ()->{
 				for (i in curCharacterData.character.animation) {
 					if (i.name == characterSprite.animation.name) {
@@ -1620,7 +1633,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			animFlipYCheckBox = new CheckBox();
 			animFlipYCheckBox.marginTop = 5;
-			animFlipYCheckBox.color = 0xFFaaaaaa;
+			animFlipYCheckBox.color = 0xFFAAAAAA;
 			animFlipYCheckBox.onChange = ()->{
 				for (i in curCharacterData.character.animation) {
 					if (i.name == characterSprite.animation.name) {
@@ -1641,7 +1654,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			loopCheckBox = new CheckBox();
 			loopCheckBox.marginTop = 5;
-			loopCheckBox.color = 0xFFaaaaaa;
+			loopCheckBox.color = 0xFFAAAAAA;
 			loopCheckBox.onChange = ()->{
 				for (i in curCharacterData.character.animation) {
 					if (i.name == characterSprite.animation.name) {
@@ -1729,17 +1742,18 @@ class CharacterEditorV2 extends MusicBeatState {
 			keybindText.dataSource.add( {text: "Save As                         Ctrl + Shift + S"} );
 			//keybindText.dataSource.add( {text: "Reset Camera Position           Ctrl + R"} );
 			keybindText.dataSource.add( {text: "Check For Updates               Ctrl + U"} );
-			keybindText.dataSource.add( {text: "Reset Camera Zoom               Ctrl + Shift + R"} );
+			keybindText.dataSource.add( {text: "Reset Camera                    Ctrl + Shift + R"} );
 			//keybindText.dataSource.add( {text: "Create/Add Prop                 Ctrl + A"} );
 			keybindText.dataSource.add( {text: "Deleted Selected Animation      Delete"} );
 			keybindText.dataSource.add( {text: "Exit                            Ctrl + Q"} );
 			keybindText.dataSource.add( {text: "                    -- Editor Controls --"} );
 			keybindText.dataSource.add( {text: "Move Camera                     W, A, S, D, Left Click + Drag"} );
-			keybindText.dataSource.add( {text: "Zoom Camera                     Q, E, Mouse Wheel"} );
+			keybindText.dataSource.add( {text: "Zoom Camera                     Q, E"} );
 			keybindText.dataSource.add( {text: "Play Animation                  Click Animation Name"} );
-			keybindText.dataSource.add( {text: "Play Onion Animation            Ctrl + Click Animation Name"} );
 			keybindText.dataSource.add( {text: "Play Sing Animation             I, J, K, L"} );
-			keybindText.dataSource.add( {text: "Play Alt Sing Animation         Shift + I, J, K, L"} );
+			keybindText.dataSource.add( {text: "Play Onion Animation            Ctrl + Click Animation Name"} );
+			keybindText.dataSource.add( {text: "Play Alt Sing Animation         Shift + (I, J, K, L)"} );
+			keybindText.dataSource.add( {text: "Play Onion Sing Animation       Ctrl + (I, J, K, L)"} );
 			helpTabBarShortcuts.addComponent(keybindText);
 	
 			var helpTabExtra = new ScrollView();
@@ -2063,7 +2077,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		} else if (FlxG.keys.pressed.E) {
 			cameraTarget.zoom += shiftAmount/1000;
 		}
-		cameraTarget.zoom += FlxG.mouse.wheel/10;
+		// cameraTarget.zoom += FlxG.mouse.wheel/10;
 		if (cameraTarget.zoom < 0.01) {
 			cameraTarget.zoom = 0.01;
 		}

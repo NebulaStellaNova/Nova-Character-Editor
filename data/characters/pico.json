@@ -1,33 +1,55 @@
 {
-  "version": "1.0.0",
-  "name": "Pico",
-  "assetPath": "characters/Pico_Basic",
-  "flipX": true,
-  "animations": [
-    {
-      "name": "idle",
-      "prefix": "Pico Idle Dance",
-      "offsets": [0, 0]
-    },
-    {
-      "name": "singRIGHT",
-      "prefix": "Pico NOTE LEFT0",
-      "offsets": [-86, -10]
-    },
-    {
-      "name": "singDOWN",
-      "prefix": "Pico Down Note0",
-      "offsets": [-37, -82]
-    },
-    {
-      "name": "singUP",
-      "prefix": "pico Up note0",
-      "offsets": [-32, 28]
-    },
-    {
-      "name": "singLEFT",
-      "prefix": "Pico Note Right0",
-      "offsets": [61, 2]
-    }
-  ]
+	"danceEvery": 1,
+	"renderType": "sparrow",
+	"version": "1.0.0",
+	"name": "Pico",
+	"flipX": true,
+	"assetPath": "Pico_Basic",
+	"healthIcon": {
+		"isPixel": false,
+		"id": "pico"
+	},
+	"generatedBy": "Nova Character Editor REFRESHED v0.1.0",
+	"animations": [
+		{
+			"offsets": [
+				0,
+				0
+			],
+			"prefix": "Pico Idle Dance",
+			"name": "idle"
+		},
+		{
+			"offsets": [
+				-86,
+				-10
+			],
+			"prefix": "Pico NOTE LEFT0",
+			"name": "singRIGHT"
+		},
+		{
+			"offsets": [
+				-37,
+				-82
+			],
+			"prefix": "Pico Down Note0",
+			"name": "singDOWN"
+		},
+		{
+			"offsets": [
+				-32,
+				28
+			],
+			"prefix": "pico Up note0",
+			"name": "singUP"
+		},
+		{
+			"offsets": [
+				61,
+				2
+			],
+			"prefix": "Pico Note Right0",
+			"name": "singLEFT"
+		}
+	]
 }
