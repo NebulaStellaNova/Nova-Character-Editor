@@ -797,6 +797,11 @@ class CharacterEditorV2 extends MusicBeatState {
 			songMetaLabel = new Label();
 			songMetaLabel.marginTop = 30;
 
+			for (song in FileUtil.readDir("assets/songs/")) {
+				var daSongs = "assets/songs/" + song + "/Inst.ogg";
+				trace(daSongs);
+			}
+
 			for (file in FileUtil.readDir("assets/shared/music/")) {
 				var metaPath = "assets/shared/music/" + file + "/" + file + "-metadata.json";
 				var songMeta;
@@ -2104,15 +2109,10 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.beatHit();
 		var curBeat = get_conductorInUse().currentBeat;
 
-		if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
-			characterSprite.dance();
-			/* if (characterSprite.animation != null) {
-				if (characterSprite.animation.exists('idle') && curCharacterData.character.animations["idle"].name == "idle") {
-					if (characterSprite.animation.name == "idle" && !characterSprite.animation.curAnim.looped) {
-								characterSprite.animation.play("idle", true);
-					}
-				}
-			} */
+		if (characterSprite != null) {
+			if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
+				characterSprite.dance();
+			}
 		}
 	}
 	
