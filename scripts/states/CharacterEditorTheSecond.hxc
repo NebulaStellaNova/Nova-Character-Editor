@@ -90,6 +90,8 @@ import funkin.modding.module.ModuleHandler;
 
 import openfl.net.FileFilter;
 
+import flixel.util.FlxTimer;
+
 class CharacterEditorV2 extends MusicBeatState {
     var FILE_FILTER_XML:FileFilter = new FileFilter("Codename Character File", "*.xml");
 	// -- Classes -- \\
@@ -896,8 +898,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		exitItem.shortcutText = 'Ctrl + Q';
 		exitItem.onClick = () -> {
 			disableAutoPause();
-			PolymodHandler.forceReloadAssets();
-			FlxG.switchState(new MainMenuState());
+			debugPrint("Reloading Mods...");
+			new FlxTimer().start(0.1, ()->{
+				PolymodHandler.forceReloadAssets();
+				FlxG.switchState(new MainMenuState());
+			});
 		}
 		fileMenu.addComponent(exitItem);
 
@@ -1053,19 +1058,6 @@ class CharacterEditorV2 extends MusicBeatState {
 		add(watermark);
 
 		loadCharacter(characterData[0]);
-
-		
-		/* var fuckYouHaxeUI = new Window();
-		fuckYouHaxeUI.windowManager = windowManager;
-		fuckYouHaxeUI.title = "Background Color";
-		fuckYouHaxeUI.x = 200;
-		fuckYouHaxeUI.y = 200;
-		fuckYouHaxeUI.maximizable = false;
-		fuckYouHaxeUI.minimizable = false;
-		fuckYouHaxeUI.collapsable = false;
-		
-		fuckYouHaxeUI.addComponent(bgColorPicker);
-		add(fuckYouHaxeUI); */
 
 		fuckNebula();
 		openAnimEditWindow();
