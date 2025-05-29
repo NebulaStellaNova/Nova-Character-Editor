@@ -22,7 +22,7 @@ class NovaConverters extends Module {
         var currentFolder = "??";
         for (mod in PolymodHandler.getAllMods()) {
             var meta = Json.parse(FileUtil.readStringFromPath("mods/" + mod.id + "/_polymod_meta.json"));
-            if (meta.title == "Nova Character Editor REFRESHED") {
+            if (meta.title == "Nova Character Editor REFRESHED - PRELEASE") {
                 currentFolder = "mods/" + mod.id;
                 break;
             }

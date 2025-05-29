@@ -805,10 +805,12 @@ class CharacterEditorV2 extends MusicBeatState {
 				} else {
 					songMeta = { songName: file, artist: "???", timeChanges: [{bpm: "???"}] };
 				}
-				realSongList.push({
-					id: file,
-					meta: songMeta
-				});
+				if (FileUtil.directoryExists("assets/shared/music/" + file)) {
+					realSongList.push({
+						id: file,
+						meta: songMeta
+					});
+				}
 			}
 			for (file in FileUtil.readDir("assets/music/")) {
 				var songMeta = parseJsonFile("assets/music/" + file + "/" + file + "-metadata.json");
@@ -2101,13 +2103,14 @@ class CharacterEditorV2 extends MusicBeatState {
 		var curBeat = get_conductorInUse().currentBeat;
 
 		if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
-			if (characterSprite.animation != null) {
+			characterSprite.dance();
+			/* if (characterSprite.animation != null) {
 				if (characterSprite.animation.exists('idle') && curCharacterData.character.animations["idle"].name == "idle") {
 					if (characterSprite.animation.name == "idle" && !characterSprite.animation.curAnim.looped) {
 								characterSprite.animation.play("idle", true);
 					}
 				}
-			}
+			} */
 		}
 	}
 	
