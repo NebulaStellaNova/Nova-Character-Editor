@@ -523,7 +523,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			trace(fixPath(path));
 			writeCharacterFile(fixPath(path), tempChar);
 			enableAutoPause();
+			debugPrint("Reloading Editor...");
 			FlxG.switchState(ScriptedMusicBeatState.init('CharacterEditorV2'));
+			PolymodHandler.forceReloadAssets();
 		}, enableAutoPause, name);
 	}
 
@@ -1001,6 +1003,17 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		}
 		toolsMenu.addComponent(clearAllOffsetsItem);
+
+		/* var separator = new MenuSeparator();
+		fileMenu.addComponent(separator); 
+		
+		polyReloadEditor = new MenuItem();
+		polyReloadEditor.text = "Polymod Reload Editor";
+		polyReloadEditor.onClick = ()->{
+			debugPrint("Editor Reloaded");
+			PolymodHandler.forceReloadAssets();
+		}
+		toolsMenu.addComponent(polyReloadEditor); */
 		
 		// -- Converters Dropdown -- \\
 		convertersMenu = new Menu();
