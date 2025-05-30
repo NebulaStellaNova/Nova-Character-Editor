@@ -902,9 +902,15 @@ class CharacterEditorV2 extends MusicBeatState {
 			miscBox.text = 'Misc';
 			preferenceTabs.addComponent(miscBox);
 
+			miscHBox = new HBox();
+			miscBox.addComponent(miscHBox);
+
 			var miscDebugSettings = new Label();
 			miscDebugSettings.text = "Enable Debug Settings:";
-			miscBox.addComponent(miscDebugSettings);
+			miscHBox.addComponent(miscDebugSettings);
+
+			debugSettingsCheckbox = new CheckBox();
+			miscHBox.addComponent(debugSettingsCheckbox);
 
 		}
 		fileMenu.addComponent(preferencesItem);
@@ -1754,11 +1760,11 @@ class CharacterEditorV2 extends MusicBeatState {
 			//keybindText.dataSource.add( {text: "Reset Camera Position           Ctrl + R"} );
 			keybindText.dataSource.add( {text: "Check For Updates               Ctrl + U"} );
 			keybindText.dataSource.add( {text: "Reset Camera                    Ctrl + Shift + R"} );
-			//keybindText.dataSource.add( {text: "Create/Add Prop                 Ctrl + A"} );
+			keybindText.dataSource.add( {text: "New Animaton                    Ctrl + A"} );
 			keybindText.dataSource.add( {text: "Deleted Selected Animation      Delete"} );
 			keybindText.dataSource.add( {text: "Exit                            Ctrl + Q"} );
 			keybindText.dataSource.add( {text: "                    -- Editor Controls --"} );
-			keybindText.dataSource.add( {text: "Move Camera                     W, A, S, D, Left Click + Drag"} );
+			keybindText.dataSource.add( {text: "Move Camera                     W, A, S, D, L-Click + Drag"} );
 			keybindText.dataSource.add( {text: "Zoom Camera                     Q, E"} );
 			keybindText.dataSource.add( {text: "Play Animation                  Click Animation Name"} );
 			keybindText.dataSource.add( {text: "Play Sing Animation             I, J, K, L"} );
