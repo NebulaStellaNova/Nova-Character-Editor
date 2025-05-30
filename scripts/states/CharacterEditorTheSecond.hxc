@@ -496,7 +496,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			label.text = "Failed to save character!";
 			editWindow.addComponent(label);
 			var pathLabel = new Label();
-			pathLabel.text = "\"assets\" is protected.";
+			pathLabel.text = "Saving to \"assets\" is protected.";
 			editWindow.addComponent(pathLabel);
 			editWindow.title = "Failed to Save!";
 			editWindow.color = 0xFFFF0000;

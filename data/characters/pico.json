@@ -1,10 +1,10 @@
 {
-	"danceEvery": 1,
-	"renderType": "sparrow",
 	"version": "1.0.0",
-	"name": "Pico",
+	"renderType": "sparrow",
+	"danceEvery": 1,
 	"flipX": true,
-	"assetPath": "Pico_Basic",
+	"name": "Pico",
+	"assetPath": "characters/Pico_Basic",
 	"healthIcon": {
 		"isPixel": false,
 		"id": "pico"
@@ -12,43 +12,43 @@
 	"generatedBy": "Nova Character Editor REFRESHED v0.1.0",
 	"animations": [
 		{
+			"prefix": "Pico Idle Dance",
 			"offsets": [
 				0,
 				0
 			],
-			"prefix": "Pico Idle Dance",
 			"name": "idle"
 		},
 		{
+			"prefix": "Pico NOTE LEFT0",
 			"offsets": [
 				-86,
 				-10
 			],
-			"prefix": "Pico NOTE LEFT0",
 			"name": "singRIGHT"
 		},
 		{
+			"prefix": "Pico Down Note0",
 			"offsets": [
 				-37,
 				-82
 			],
-			"prefix": "Pico Down Note0",
 			"name": "singDOWN"
 		},
 		{
+			"prefix": "pico Up note0",
 			"offsets": [
 				-32,
 				28
 			],
-			"prefix": "pico Up note0",
 			"name": "singUP"
 		},
 		{
+			"prefix": "Pico Note Right0",
 			"offsets": [
 				61,
 				2
 			],
-			"prefix": "Pico Note Right0",
 			"name": "singLEFT"
 		}
 	]
