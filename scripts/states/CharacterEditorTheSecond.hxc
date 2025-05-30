@@ -1768,6 +1768,8 @@ class CharacterEditorV2 extends MusicBeatState {
 			keybindText.dataSource.add( {text: "Play Onion Animation            Ctrl + Click Animation Name"} );
 			keybindText.dataSource.add( {text: "Play Alt Sing Animation         Shift + (I, J, K, L)"} );
 			keybindText.dataSource.add( {text: "Play Onion Sing Animation       Ctrl + (I, J, K, L)"} );
+			keybindText.dataSource.add( {text: "Play Idle Animation             Z"} );
+			keybindText.dataSource.add( {text: "Play Onion Idle Animation       Ctrl + (Z)"} );
 			helpTabBarShortcuts.addComponent(keybindText);
 	
 			var helpTabExtra = new ScrollView();
