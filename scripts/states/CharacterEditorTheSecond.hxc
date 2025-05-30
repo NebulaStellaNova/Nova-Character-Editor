@@ -2123,9 +2123,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		super.beatHit();
 		var curBeat = get_conductorInUse().currentBeat;
 
-		if (characterSprite != null) {
-			if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
-				characterSprite.dance();
+		if (curAnim.name == "idle" || curAnim.name == 'danceLeft'){
+			if (characterSprite != null) {
+				if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
+					characterSprite.dance();
+				}
 			}
 		}
 	}
