@@ -480,8 +480,6 @@ class CharacterEditorV2 extends MusicBeatState {
 		editWindow.windowManager = windowManager;
 		editWindow.screenCenter();
 
-		
-
 		if (!StringTools.contains(curCharacterData.path, "assets")) {
 			var label = new Label();
 			label.text = "Successfully saved character to";
@@ -1275,6 +1273,14 @@ class CharacterEditorV2 extends MusicBeatState {
 			// assetPath.marginTop = 5;
 			renderType.color = 0xFFAAAAAA;
 			renderType.width = 123;
+			renderType.onChange = ()->{
+				if (renderType.text == 'sparrow'|| renderType.text == 'multisparrow') {
+					renderType.color = 0xFFAAAAAA;
+				} else {
+					renderType.color = 0xFFFF0000;
+				}
+				curCharacterData.character.renderType = renderType.text;
+			}
 			renderTypeBox.addComponent(renderType);
 	
 			var charScaleBox = new HBox();
@@ -1311,6 +1317,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			singTimeStepper.color = 0xFFAAAAAA;
 			singTimeStepper.width = 138;
 			singTimeStepper.pos = curCharacterData.character.singTime;
+			singTimeStepper.onChange = ()->{
+				curCharacterData.character.singTime = singTimeStepper.pos;
+			}
 			singTimeBox.addComponent(singTimeStepper);
 	
 			var danceEveryBox = new HBox();
@@ -1393,6 +1402,7 @@ class CharacterEditorV2 extends MusicBeatState {
 					characterSprite.playAnimation(animationList.selectedItem.text, true);
 				}
 				curAnim = getAnimData();
+				// debugPrint(curAnim);
 				if (animName != null) {
 					animName.text = curAnim.name;
 				}

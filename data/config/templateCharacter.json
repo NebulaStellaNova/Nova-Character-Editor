@@ -1,45 +1,33 @@
 {
   "version": "1.0.0",
   "name": "New Character",
-  "assetPath": "characters/Pico_Basic",
-  "flipX": true,
+  "assetPath": "characters/daddyDearest",
+  "singTime": 4.0,
   "animations": [
     {
       "name": "idle",
-      "prefix": "Pico Idle Dance",
-      "offsets": [0, 0]
-    },
-    {
-      "name": "singRIGHT",
-      "prefix": "Pico NOTE LEFT0",
-      "offsets": [0, 0]
-    },
-    {
-      "name": "singDOWN",
-      "prefix": "Pico Down Note0",
-      "offsets": [0, 0]
-    },
-    {
-      "name": "singUP",
-      "prefix": "pico Up note0",
+      "prefix": "idle",
       "offsets": [0, 0]
     },
     {
       "name": "singLEFT",
-      "prefix": "Pico Note Right0",
-      "offsets": [0, 0]
+      "prefix": "singLEFT",
+      "offsets": [-10, 10]
+    },
+    {
+      "name": "singDOWN",
+      "prefix": "singDOWN",
+      "offsets": [0, -30]
+    },
+    {
+      "name": "singUP",
+      "prefix": "singUP",
+      "offsets": [-6, 50]
+    },
+    {
+      "name": "singRIGHT",
+      "prefix": "singRIGHT",
+      "offsets": [0, 27]
     }
-  ],
-  "healthIcon": {
-		"offsets": [
-			0,
-			0
-		],
-		"isPixel": false,
-		"flipY": false,
-		"scale": 1,
-		"flipX": false,
-		"id": "face"
-	},
-  "generatedBy": "Nova Character Editor REFRESHED v0.1.0"
+  ]
 }
