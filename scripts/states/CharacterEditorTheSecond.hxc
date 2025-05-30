@@ -1386,12 +1386,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				} else {
 					characterSprite.playAnimation(animationList.selectedItem.text, true);
 				}
-				var curAnim;
-				for (i in curCharacterData.character.animations) {
-					if (i.name == animationList.selectedItem.text) {
-						curAnim = i;
-					}
-				}
+				curAnim = getAnimData();
 				if (animName != null) {
 					animName.text = curAnim.name;
 				}
@@ -1478,16 +1473,12 @@ class CharacterEditorV2 extends MusicBeatState {
 	}
 
 	var editAnimWindow;
+	var curAnim;
 
 	function openAnimEditWindow() {
-		var curAnim;
-		for (i in curCharacterData.character.animations) {
-			if (i.name == characterSprite.animation.name) {
-				curAnim = i;
-			}
-		}
 		// dumb ahh code above fr - genzu
-		
+		curAnim = getAnimData();
+
 		if (editAnimWindow == null || !editAnimWindow.visible) {
 
 			editAnimWindow = new Window();
@@ -1520,6 +1511,10 @@ class CharacterEditorV2 extends MusicBeatState {
 			animName.text = characterSprite.animation.name;
 			animName.width =  175;
 			animName.color = 0xFFAAAAAA;
+			animName.onChange =()->{
+				trace(curAnim);
+				curAnim.name = animName.text;
+			}
 			animNameBox.addComponent(animName);
 
 			prefixBox = new HBox();
@@ -1534,9 +1529,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			prefix.placeholder = "None";
 			prefix.width =  161;
 			prefix.color = 0xFFAAAAAA;
-			prefix.text = curAnim.prefix;
+			// prefix.text = curAnim.prefix;
 			prefix.onChange = ()->{
-
+				curAnim.prefix = prefix.text;
 			}
 			prefixBox.addComponent(prefix);
 			
@@ -1916,6 +1911,14 @@ class CharacterEditorV2 extends MusicBeatState {
 				childCheck(child);
 			}
 			//trace("has children");
+		}
+	}
+
+	function getAnimData(){
+		for (i in curCharacterData.character.animations) {
+			if (i.name == characterSprite.animation.name) {
+				return i;
+			}
 		}
 	}
 
