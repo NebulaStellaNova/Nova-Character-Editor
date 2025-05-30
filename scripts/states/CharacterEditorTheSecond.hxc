@@ -278,7 +278,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				updateWindow.collapsable = false;
 				updateWindow.windowManager = windowManager;
 				updateWindow.width = 300;
-				updateWindow.height = 192;
+				updateWindow.height = 192;-
 				
 
 				var nameLabel = new Label();
@@ -716,9 +716,6 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 		fileMenu.addComponent(newItem);
 
-		var separator = new MenuSeparator();
-		fileMenu.addComponent(separator);
-
 		openItem = new MenuItem();
 		openItem.text = 'Open';
 		openItem.shortcutText = 'Ctrl + O';
@@ -901,6 +898,14 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			}
 
+			var miscBox = new Box();
+			miscBox.text = 'Misc';
+			preferenceTabs.addComponent(miscBox);
+
+			var miscDebugSettings = new Label();
+			miscDebugSettings.text = "Enable Debug Settings:";
+			miscBox.addComponent(miscDebugSettings);
+
 		}
 		fileMenu.addComponent(preferencesItem);
 		
@@ -949,9 +954,6 @@ class CharacterEditorV2 extends MusicBeatState {
 			openAnimEditWindow();
 		}
 		editMenu.addComponent(editAnimsItem);      
-		
-		var separator = new MenuSeparator();
-		fileMenu.addComponent(separator); 
 
 		deleteAnimItem = new MenuItem();
 		deleteAnimItem.text = 'Delete Current Animation';
