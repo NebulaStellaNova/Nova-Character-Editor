@@ -1666,7 +1666,6 @@ class CharacterEditorV2 extends MusicBeatState {
 					for (i in indices.text.split(",")) {
 						curAnim.frameIndices.push(Std.parseInt(i));
 					}
-					debugPrint(curAnim.frameIndices);
 				} else {
 					curAnim.frameIndices = null;
 				}
