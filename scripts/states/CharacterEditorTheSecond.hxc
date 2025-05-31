@@ -451,6 +451,10 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		resetCamera();
+
+		characterSprite.playAnimation('idle', true);
+		onionSprite.playAnimation('idle', true);
+
 	}
 
 	function checkFileExists(path:String) {
@@ -1269,8 +1273,8 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.assetPath = "characters/" +assetPath.text;
 				if (checkFileExists(Paths.image('characters/' + assetPath.text))){
 					// idk how TF to make this work, u fix it nebula!!
-					// loadCharacter(curCharacterData);
 					assetPath.color = 0xFFAAAAAA;
+					// loadCharacter(curCharacterData);
 				} else {
 					assetPath.color = 0xFFFF0000;
 				}
@@ -1536,12 +1540,19 @@ class CharacterEditorV2 extends MusicBeatState {
 						flipX: false,
 						flipY: false
 						};
-					curCharacterData.character.animations.push(daAnimation);
+					for (anim in curCharacterData.character.animations) {
+						if (anim.name == characterSprite.animation.name) {
+							curCharacterData.character.animations.push(daAnimation);
+							loadCharacter(curCharacterData);
+							reloadAnimationList();
+						}
+					}
+					/* curCharacterData.character.animations.push(daAnimation);
 					loadCharacter(curCharacterData);
 					newAnimPrefixTextField.focus = false;
-					newAnimNameTextField.focus = false;
-					curAnim = getAnimData();
+					newAnimNameTextField.focus = false; */
 					windowManager.closeWindow(newAnimWindow);
+					trace(daAnimation);
 				}
 				newAnimWindow.addComponent(newAnimOkayButton);
 			}
@@ -2092,7 +2103,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		// so why does your code not work? - genzu
 
 		for (i in curCharacterData.character.animations) {
-			if (i.name == characterSprite.animation.name) {
+			if (i.name == characterSprite.animation.name) {				
 				if (FlxG.keys.justPressed.LEFT) {
 					i.offsets[0] -= (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipX ? -1 : 1);
 				}
@@ -2105,7 +2116,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				if (FlxG.keys.justPressed.DOWN) {
 					i.offsets[1] += (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipY ? -1 : 1);
 				}
-				
+
 				charOffsetXLabel.text = 'Offset X: ' + i.offsets[0] + ' | Offset Y: ' + i.offsets[1];
 
 				characterSprite.animationOffsets[i.name][0] = i.offsets[0];
@@ -2172,15 +2183,15 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		if (characterSprite != null) {
-			//if (!FlxG.mouse.overlaps(characterSprite)) {
+			// if (!FlxG.mouse.overlaps(characterSprite)) {
 				if (FlxG.mouse.pressed) {
 					cameraTarget.x -= FlxG.mouse.deltaX/FlxG.camera.zoom;
 					cameraTarget.y -= FlxG.mouse.deltaY/FlxG.camera.zoom;
 				}
 				
-			//} else {
+			// } else {
 				
-			//}
+			// }
 		}
 
 		if (!FlxG.keys.pressed.CONTROL) {
