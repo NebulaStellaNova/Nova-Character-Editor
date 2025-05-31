@@ -1398,6 +1398,10 @@ class CharacterEditorV2 extends MusicBeatState {
 			charFlipXCheckBox = new CheckBox();
 			charFlipXCheckBox.marginTop = 5;
 			charFlipXCheckBox.color = 0x00aaaaaa;
+			charFlipXCheckBox.selected = curCharacterData.character.flipX;
+			charFlipXCheckBox.onChange = ()->{
+				curCharacterData.character.flipX = charFlipXCheckBox.selected;
+			}
 			charflipXBox.addComponent(charFlipXCheckBox);
 	
 			var charFlipY = new Label();
@@ -1546,16 +1550,14 @@ class CharacterEditorV2 extends MusicBeatState {
 					for (anim in curCharacterData.character.animations) {
 						if (anim.name == characterSprite.animation.name) {
 							curCharacterData.character.animations.push(daAnimation);
+							// characterSprite.animation.add(daAnimation);
 							loadCharacter(curCharacterData);
-							reloadAnimationList();
 						}
 					}
-					/* curCharacterData.character.animations.push(daAnimation);
-					loadCharacter(curCharacterData);
 					newAnimPrefixTextField.focus = false;
-					newAnimNameTextField.focus = false; */
+					newAnimNameTextField.focus = false;
 					windowManager.closeWindow(newAnimWindow);
-					trace(daAnimation);
+					debugPrint(daAnimation);
 				}
 				newAnimWindow.addComponent(newAnimOkayButton);
 			}
