@@ -1004,16 +1004,21 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 		toolsMenu.addComponent(clearAllOffsetsItem);
 
-		/* var separator = new MenuSeparator();
+		var separator = new MenuSeparator();
 		fileMenu.addComponent(separator); 
 		
 		polyReloadEditor = new MenuItem();
 		polyReloadEditor.text = "Polymod Reload Editor";
 		polyReloadEditor.onClick = ()->{
-			debugPrint("Editor Reloaded");
-			PolymodHandler.forceReloadAssets();
+			debugPrint("Reloading Editor...");
+			new FlxTimer().start(0.1, ()->{
+				PolymodHandler.forceReloadAssets();
+			});
+			new FlxTimer().start(0.2, ()->{
+				debugPrint("Editor Reloaded");
+			});
 		}
-		toolsMenu.addComponent(polyReloadEditor); */
+		toolsMenu.addComponent(polyReloadEditor);
 		
 		// -- Converters Dropdown -- \\
 		convertersMenu = new Menu();
@@ -1346,6 +1351,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			danceEveryStepper = new NumberStepper();
 			danceEveryStepper.color = 0xFFAAAAAA;
 			danceEveryStepper.width = 103;
+			danceEveryStepper.min = 1;
 			danceEveryStepper.pos = curCharacterData.character.danceEvery != null ? curCharacterData.character.danceEvery : 1;
 			danceEveryStepper.onChange = ()->{
 				curCharacterData.character.danceEvery = danceEveryStepper.pos;
@@ -1415,7 +1421,7 @@ class CharacterEditorV2 extends MusicBeatState {
 					characterSprite.playAnimation(animationList.selectedItem.text, true);
 				}
 				curAnim = getAnimData();
-				// debugPrint(curAnim);
+				debugPrint(curAnim);
 				if (animName != null) {
 					animName.text = curAnim.name;
 				}
@@ -1476,6 +1482,69 @@ class CharacterEditorV2 extends MusicBeatState {
 			createAnimButton.marginTop = 5;
 			createAnimButton.text = 'New Anim';
 			createAnimButton.color = 0xFFAAAAAA;
+			createAnimButton.onClick = ()->{
+
+				openSound();
+
+				var newAnimWindow = new Window();
+				newAnimWindow.title = "New Animation";
+				newAnimWindow.windowManager = windowManager;
+				newAnimWindow.width = 350;
+				newAnimWindow.height = 160;
+				newAnimWindow.screenCenter();
+				add(newAnimWindow);
+
+				var newAnimNameHBox = new HBox();
+				newAnimWindow.addComponent(newAnimNameHBox);
+
+				var newAnimNameLable = new Label();
+				newAnimNameLable.text = "Name:";
+				newAnimNameLable.marginTop = 5;
+				newAnimNameHBox.addComponent(newAnimNameLable);
+
+				newAnimNameTextField = new TextField();
+				newAnimNameTextField.placeholder = "New Animation Name";
+				newAnimNameTextField.color = 0xFFAAAAAA;
+				newAnimNameTextField.width = 270;
+				newAnimNameHBox.addComponent(newAnimNameTextField);
+
+				var newAnimPrefixHBox = new HBox();
+				newAnimWindow.addComponent(newAnimPrefixHBox);
+				
+				var newAnimPrefixLable = new Label();
+				newAnimPrefixLable.text = "Prefix:";
+				newAnimPrefixLable.marginTop = 5;
+				newAnimPrefixHBox.addComponent(newAnimPrefixLable);
+
+				newAnimPrefixTextField = new TextField();
+				newAnimPrefixTextField.placeholder = "New Prefix Name";
+				newAnimPrefixTextField.color = 0xFFAAAAAA;
+				newAnimPrefixTextField.width = 256;
+				newAnimPrefixHBox.addComponent(newAnimPrefixTextField);
+
+				newAnimOkayButton = new Button();
+				newAnimOkayButton.marginTop = 5;
+				newAnimOkayButton.marginLeft = newAnimWindow.width - 110;
+				newAnimOkayButton.text = "Confrim";
+				newAnimOkayButton.onClick = ()->{
+					var daAnimation = {
+						name: newAnimNameTextField.text,
+						prefix: newAnimPrefixTextField.text,
+						offsets: [ 0, 0 ],
+						frameRate: 24,
+						looped: false,
+						flipX: false,
+						flipY: false
+						};
+					curCharacterData.character.animations.push(daAnimation);
+					loadCharacter(curCharacterData);
+					newAnimPrefixTextField.focus = false;
+					newAnimNameTextField.focus = false;
+					curAnim = getAnimData();
+					windowManager.closeWindow(newAnimWindow);
+				}
+				newAnimWindow.addComponent(newAnimOkayButton);
+			}
 			createDeleteButtonBox.addComponent(createAnimButton);
 	
 			var deleteAnimButton = new Button();
@@ -1995,6 +2064,10 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		if (animationList != null) {
 			animationList.focus = false;
+		}
+
+		if (curCharacterData.character.danceEvery == null){
+			curCharacterData.character.danceEvery = 1;
 		}
 		
 		for (i in members) {
