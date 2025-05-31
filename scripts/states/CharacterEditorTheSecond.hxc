@@ -555,6 +555,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		return path;
 	}
 
+	var curAnimDefaultIndices;
+
 	var realSongList = [];
 
 	function create() {
@@ -1424,16 +1426,14 @@ class CharacterEditorV2 extends MusicBeatState {
 				} else {
 					characterSprite.playAnimation(animationList.selectedItem.text, true);
 				}
+				curAnimDefaultIndices = characterSprite.animation.curAnim.frames;
 				curAnim = getAnimData();
-				debugPrint(curAnim);
+				//debugPrint(curAnim); // Was getting in the way of my testing
 				if (animName != null) {
 					animName.text = curAnim.name;
 				}
 				if (prefix != null) {
 					prefix.text = curAnim.prefix;
-				}
-				if (indices != null) {
-					//indices.text = curAnim.indices;
 				}
 				if (animStepperX != null) {
 					animStepperX.pos = curAnim.offsets != null ? curAnim.offsets[0] : 0;
@@ -1443,6 +1443,9 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 				if (animAssetPath != null) {
 					animAssetPath.text = StringTools.replace(curAnim.assetPath, "characters/", "");
+				}
+				if (indices != null) {
+					indices.text = curAnim.frameIndices != null ? StringTools.replace(StringTools.replace(curAnim.frameIndices + "", "[", ""), "]", "") : "";
 				}
 				// v Fuck ass code is crashing v
 				if (loopCheckBox != null) {
@@ -1653,18 +1656,31 @@ class CharacterEditorV2 extends MusicBeatState {
 			indicesBox.addComponent(indicesLabel);
 
 			indices = new TextField();
-			indices.placeholder = "Coming Soon";
+			indices.placeholder = "None";
 			indices.width =  154;
 			indices.color = 0xFFAAAAAA;
+			indices.text = curAnim.frameIndices != null ? StringTools.replace(StringTools.replace(curAnim.frameIndices + "", "[", ""), "]", "") : "";
 			indices.onChange = ()->{
-				/* if (indices.text != "") {
-					curAnim.indices = [];
+				if (indices.text != "") {
+					curAnim.frameIndices = [];
 					for (i in indices.text.split(",")) {
-						curAnim.indices.push(Std.parseInt(i));
+						curAnim.frameIndices.push(Std.parseInt(i));
 					}
+					debugPrint(curAnim.frameIndices);
 				} else {
 					curAnim.frameIndices = null;
-				} */
+				}
+				if (curAnim.frameIndices != null) {
+					if (curAnimDefaultIndices != null) {
+						characterSprite.animation.curAnim.frames = [];
+						for (i in curAnim.frameIndices) {
+							characterSprite.animation.curAnim.frames.push(curAnimDefaultIndices[0] + i);
+						}
+					}
+				} else {
+					characterSprite.animation.curAnim.frames = curAnimDefaultIndices;
+				}
+				characterSprite.playAnimation(characterSprite.animation.name);
 			}
 			indicesBox.addComponent(indices);
 
