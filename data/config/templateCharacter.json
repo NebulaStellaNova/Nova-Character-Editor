@@ -7,27 +7,52 @@
     {
       "name": "idle",
       "prefix": "idle",
-      "offsets": [0, 0]
+      "offsets": [0, 0],
+      "frameIndices": [],
+			"looped": false,
+			"flipX": false,
+			"flipY": false,
+			"frameRate": 24
     },
     {
       "name": "singLEFT",
       "prefix": "singLEFT",
-      "offsets": [-10, 10]
+      "offsets": [-10, 10],
+      "frameIndices": [],
+			"looped": false,
+			"flipX": false,
+			"flipY": false,
+			"frameRate": 24
     },
     {
       "name": "singDOWN",
       "prefix": "singDOWN",
-      "offsets": [0, -30]
+      "offsets": [0, -30],
+      "frameIndices": [],
+			"looped": false,
+			"flipX": false,
+			"flipY": false,
+			"frameRate": 24
     },
     {
       "name": "singUP",
       "prefix": "singUP",
-      "offsets": [-6, 50]
+      "offsets": [-6, 50],
+      "frameIndices": [],
+			"looped": false,
+			"flipX": false,
+			"flipY": false,
+			"frameRate": 24
     },
     {
       "name": "singRIGHT",
       "prefix": "singRIGHT",
-      "offsets": [0, 27]
+      "offsets": [0, 27],
+      "frameIndices": [],
+			"looped": false,
+			"flipX": false,
+			"flipY": false,
+			"frameRate": 24
     }
   ]
 }

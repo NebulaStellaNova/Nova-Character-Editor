@@ -92,6 +92,8 @@ import openfl.net.FileFilter;
 
 import flixel.util.FlxTimer;
 
+import funkin.util.assets.FlxAnimationUtil;
+
 class CharacterEditorV2 extends MusicBeatState {
     var FILE_FILTER_XML:FileFilter = new FileFilter("Codename Character File", "*.xml");
 	// -- Classes -- \\
@@ -1272,11 +1274,68 @@ class CharacterEditorV2 extends MusicBeatState {
 			assetPath.color = 0xFFAAAAAA;
 			assetPath.width = 130;
 			assetPath.onChange = ()->{
-				curCharacterData.character.assetPath = "characters/" +assetPath.text;
-				if (checkFileExists(Paths.image('characters/' + assetPath.text))){
-					// idk how TF to make this work, u fix it nebula!!
+				curCharacterData.character.assetPath = "characters/" + assetPath.text;
+				if (checkFileExists(Paths.image('characters/' + assetPath.text))) {
 					assetPath.color = 0xFFAAAAAA;
-					// loadCharacter(curCharacterData);
+					
+					if (curCharacterData.character.renderType == "sparrow") {
+						characterSprite.frames = Paths.getSparrowAtlas(curCharacterData.character.assetPath);
+						onionSprite.frames = Paths.getSparrowAtlas(curCharacterData.character.assetPath);
+	
+						FlxAnimationUtil.addAtlasAnimations(characterSprite, curCharacterData.character.animations);
+						FlxAnimationUtil.addAtlasAnimations(onionSprite, curCharacterData.character.animations);
+	
+						for (anim in curCharacterData.character.animations) {
+							if (anim.offsets == null) {
+								characterSprite.setAnimationOffsets(anim.name, 0, 0);
+								onionSprite.setAnimationOffsets(anim.name, 0, 0);
+							} else {
+								characterSprite.setAnimationOffsets(anim.name, anim.offsets[0], anim.offsets[1]);
+								onionSprite.setAnimationOffsets(anim.name, anim.offsets[0], anim.offsets[1]);
+							}
+						}
+						characterSprite.playAnimation("idle");
+						onionSprite.playAnimation("idle");
+					} else if (curCharacterData.character.renderType == "multisparrow") {
+						var _data = curCharacterData.character;
+
+						var assetList = [];
+						for (anim in _data.animations) {
+							if (anim.assetPath != null && !assetList.contains(anim.assetPath)) {
+								assetList.push(anim.assetPath);
+							}
+						}
+
+						var texture:FlxAtlasFrames = Paths.getSparrowAtlas(_data.assetPath);
+
+						for (asset in assetList) {
+							var subTexture:FlxAtlasFrames = Paths.getSparrowAtlas(asset);
+							// If we don't do this, the unused textures will be removed as soon as they're loaded.
+
+							if (subTexture == null) {
+								trace('Multi-Sparrow atlas could not load subtexture: ${asset}');
+							} else {
+								subTexture.parent.destroyOnNoUse = false;
+							}
+
+							texture.addAtlas(subTexture);
+						}
+
+						characterSprite.frames = texture;
+						onionSprite.frames = texture;
+
+						for (anim in curCharacterData.character.animations) {
+							if (anim.offsets == null) {
+								characterSprite.setAnimationOffsets(anim.name, 0, 0);
+								onionSprite.setAnimationOffsets(anim.name, 0, 0);
+							} else {
+								characterSprite.setAnimationOffsets(anim.name, anim.offsets[0], anim.offsets[1]);
+								onionSprite.setAnimationOffsets(anim.name, anim.offsets[0], anim.offsets[1]);
+							}
+						}
+						characterSprite.playAnimation("idle");
+						onionSprite.playAnimation("idle");
+					}
 				} else {
 					assetPath.color = 0xFFFF0000;
 				}
@@ -1430,12 +1489,14 @@ class CharacterEditorV2 extends MusicBeatState {
 				} else {
 					characterSprite.playAnimation(animationList.selectedItem.text, true);
 				}
-				curAnimDefaultIndices = characterSprite.animation.curAnim.frames;
-				curAnim = getAnimData();
-				//debugPrint(curAnim); // Was getting in the way of my testing
+				
+				curAnim = getAnimData(animationList.selectedItem.text);
+				// debugPrint(curAnim); // Was getting in the way of my testing
 				if (animName != null) {
 					animName.text = curAnim.name;
 				}
+
+
 				if (prefix != null) {
 					prefix.text = curAnim.prefix;
 				}
@@ -1451,6 +1512,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				if (indices != null) {
 					indices.text = curAnim.frameIndices != null ? StringTools.replace(StringTools.replace(curAnim.frameIndices + "", "[", ""), "]", "") : "";
 				}
+
 				// v Fuck ass code is crashing v
 				if (loopCheckBox != null) {
 					if (curAnim.looped == null) {
@@ -1464,6 +1526,11 @@ class CharacterEditorV2 extends MusicBeatState {
 				if (animFlipYCheckBox != null) {
 					//animFlipYCheckBox.selected = curAnim.flipY != null ? curAnim.flipY : false;
 				}
+
+				if (characterSprite.animation.curAnim == null) return;
+				curAnimDefaultIndices = characterSprite.animation.curAnim.frames;
+				
+				
 				// prefix.text = animationList.selectedItem.text;
 			}
 			animationList.width = 215;
@@ -1536,7 +1603,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				newAnimOkayButton = new Button();
 				newAnimOkayButton.marginTop = 5;
 				newAnimOkayButton.marginLeft = newAnimWindow.width - 110;
-				newAnimOkayButton.text = "Confrim";
+				newAnimOkayButton.text = "Confirm";
 				newAnimOkayButton.onClick = ()->{
 					var daAnimation = {
 						name: newAnimNameTextField.text,
@@ -2040,9 +2107,9 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 	}
 
-	function getAnimData(){
+	function getAnimData(defaultName:String) {
 		for (i in curCharacterData.character.animations) {
-			if (i.name == characterSprite.animation.name) {
+			if (i.name == characterSprite.animation.name || i.name == defaultName) {
 				return i;
 			}
 		}
@@ -2254,9 +2321,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		var curBeat = get_conductorInUse().currentBeat;
 
 		if (characterSprite != null) {
-			if (curAnim.name == "idle" || curAnim.name == "danceLeft"){
-				if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
-					characterSprite.dance();
+			if (curAnim != null) {
+				if (curAnim.name == "idle" || curAnim.name == "danceLeft"){
+					if (curBeat % curCharacterData.character.danceEvery*2 == 0) {
+						characterSprite.dance();
+					}
 				}
 			}
 		}
