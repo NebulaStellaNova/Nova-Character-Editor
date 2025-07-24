@@ -103,9 +103,16 @@ class CharacterEditorV2 extends MusicBeatState {
 	// ------------- \\
 
 	// -- Editor Info -- \\
-	var editorVersion = "v0.1.2";
+	var editorVersion = "v0.1.3";
 	var editorTitle = "Nova Character Editor REFRESHED";
 	var changelog = [
+		{
+			version: "v0.1.3",
+			changes: [
+				"-- Fixes --",
+				"Added a file exists check for polymod json."
+			]
+		},
 		{
 			version: "v0.1.2",
 			changes: [
@@ -128,7 +135,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 	];
 	// ----------------- \\
-	
+
 	// -- UI Elements -- \\
 	var animationList; 			// Asigned to variables because caused issue
 	var charName;
@@ -161,7 +168,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	var bg:FunkinSprite;
 
 	var windowManager = new WindowManager();
-	
+
 	var characterData = [];
 	var curCharacterData;
 	var characterSprite;
@@ -181,7 +188,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			bgColor: null
 		}
 	};
-	
+
 
 	var enableBetaFeatures = false;
 
@@ -190,11 +197,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		y: 0,
 		zoom: 0.7
 	}
-	
+
 	function new() {
 		super('CharacterEditorV2');
 	}
-	
+
 	function sortDropdownAlphabetically(a, b) {
 		a = a.text.toUpperCase();
 		b = b.text.toUpperCase();
@@ -224,11 +231,15 @@ class CharacterEditorV2 extends MusicBeatState {
 	 * @return Parsed JSON
 	*/
 	public function parseJsonFile(path:String) {
-		var daString = FileUtil.readStringFromPath(path);
-		if (daString == null || daString == "") {
-			return null;
+		if (checkFileExists(path)) {
+			var daString = FileUtil.readStringFromPath(path);
+			if (daString == null || daString == "") {
+				return null;
+			} else {
+				return parseJsonString(daString);
+			}
 		} else {
-			return parseJsonString(daString);
+			return null;
 		}
 	}
 
@@ -318,7 +329,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				updateWindow.windowManager = windowManager;
 				updateWindow.width = 300;
 				updateWindow.height = 192;-
-				
+
 
 				var nameLabel = new Label();
 				nameLabel.text = "New Version: " + cloudVersion + "\nCurrent Version: " + editorVersion;
@@ -397,7 +408,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			//FileUtil.writeBytesToPath(".temp/test.png", loader.data);
 		});
 		//var reference = new FileReference();
-		var url = "https://raw.githubusercontent.com/NebulaStellaNova/Nova-Character-Editor/refs/heads/main/_polymod_meta.json"; 
+		var url = "https://raw.githubusercontent.com/NebulaStellaNova/Nova-Character-Editor/refs/heads/main/_polymod_meta.json";
 		loader.load(new URLRequest(url));
 	}
 
@@ -412,7 +423,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			data.add( { text: i.name } );
 		}
 	}
-	
+
 	function loadCharacter(theCharacterData) {
 		curCharacterData = theCharacterData;
 		reloadAnimationList();
@@ -430,13 +441,13 @@ class CharacterEditorV2 extends MusicBeatState {
 		if (assetPath != null){
 			assetPath.text = StringTools.replace(character.assetPath, "characters/", "");
 		}
-		
+
 		if (animAssetPath != null){
 			animAssetPath.text = StringTools.replace(curAnim.assetPath != null ? curAnim.assetPath : '', "characters/", "");
 		}
-		
+
 		character.renderType = character.renderType != null ? character.renderType : "sparrow";
-		
+
 		if (renderType != null) {
 			renderType.text = character.renderType;
 		}
@@ -465,7 +476,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 
 		trace(theCharacterData.id);
-		
+
 		onionSprite = CharacterDataParser.fetchCharacter(theCharacterData.id);
 		onionSprite.updateHitbox();
 		onionSprite.screenCenter();
@@ -549,7 +560,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		ok.marginLeft = editWindow.width - 70;
 		ok.color = editWindow.color;
 		editWindow.addComponent(ok);
-		
+
 		add(editWindow);
 		ok.onClick = ()->{
 			windowManager.closeWindow(editWindow);
@@ -557,7 +568,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		openSound();
 	}
-	
+
 	function newCharacterAs(name) {
 		disableAutoPause();
 		checkForCurrentFolder();
@@ -589,12 +600,14 @@ class CharacterEditorV2 extends MusicBeatState {
 	function checkForCurrentFolder() {
 		for (mod in PolymodHandler.getAllMods()) {
 			var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
-			if (meta.title == editorTitle) {
-				currentFolder = "mods/" + mod.id;
-				if (Converters != null) {
-					Converters.scriptSet("currentFolder", currentFolder);
+			if (meta != null) {
+				if (meta.title == editorTitle) {
+					currentFolder = "mods/" + mod.id;
+					if (Converters != null) {
+						Converters.scriptSet("currentFolder", currentFolder);
+					}
+					break;
 				}
-				break;
 			}
 		}
 	}
@@ -632,7 +645,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		FunkinSound.playMusic(save.data.editorSong.key, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 		FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
-		
+
 		enableAutoPause();
 		WindowUtil.setWindowTitle("Friday Night Funkin' - Nova Character Editor");
 
@@ -651,15 +664,17 @@ class CharacterEditorV2 extends MusicBeatState {
 						var polyMeta = parseJsonFile("mods/" + i + "/_polymod_meta.json");
 						//mods.push(polyMeta.title);
 						var charFile = parseJsonFile("mods/" + i + "/data/characters/" + file);
-						characterData.push({
-							id: StringTools.replace(file, ".json", ""),
-							fileName: file,
-							path: "mods/" + i + "/",
-							character: charFile,
-							polyMeta: polyMeta
-						});
+						if (polyMeta == null || charFile == null) {} else {
+							characterData.push({
+								id: StringTools.replace(file, ".json", ""),
+								fileName: file,
+								path: "mods/" + i + "/",
+								character: charFile,
+								polyMeta: polyMeta
+							});
+						}
 					}
-					
+
 				}
 			}
 		}
@@ -676,11 +691,11 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		Cursor.show();
 		var chartEditor = new ChartEditorState();
-		
+
 		camHUD = new FlxCamera();
 		camHUD.bgColor = 0x00000000;
 		FlxG.cameras.add(camHUD, false);
-		
+
 		// -- Top Bar Shit -- \\
 		topBar = new MenuBar();
 		topBar.width = FlxG.width;
@@ -705,7 +720,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		// -- File Dropdown -- \\
 		fileMenu = new Menu();
-		fileMenu.text = 'File'; 
+		fileMenu.text = 'File';
 		topBar.addComponent(fileMenu);
 
 		newItem = new MenuItem();
@@ -724,7 +739,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			var stageData = {
 				name: ""
 			}
-			
+
 			var name = new TextField();
 			name.placeholder = "New Character";
 			name.color = 0xFFAAAAAA;
@@ -732,18 +747,18 @@ class CharacterEditorV2 extends MusicBeatState {
 				stageData.name = name.text;
 				name.color = 0xFFAAAAAA;
 			}
-				
+
 			var nameBox = new HBox();
 
 			var nameLabel = new Label();
 			nameLabel.text = "Name:";
 			nameLabel.marginTop = 6;
 			nameBox.addComponent(nameLabel);
-			
+
 			nameBox.addComponent(name);
-			
+
 			newWindow.addComponent(nameBox);
-			
+
 			var confirmButton = new Button();
 			confirmButton.text = "Confirm";
 			confirmButton.marginTop = 3;
@@ -776,7 +791,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		}
 		//fileMenu.addComponent(openItem);
-		
+
 		var separator = new MenuSeparator();
 		fileMenu.addComponent(separator);
 
@@ -787,7 +802,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			saveCharacter();
 		}
 		fileMenu.addComponent(saveItem);
-		
+
 		saveAsItem = new MenuItem();
 		saveAsItem.text = 'Save As';
 		saveAsItem.shortcutText = 'Ctrl + Shift + S';
@@ -795,14 +810,14 @@ class CharacterEditorV2 extends MusicBeatState {
 			saveCharacterAs();
 		}
 		fileMenu.addComponent(saveAsItem);
-		
+
 		var separator = new MenuSeparator();
 		fileMenu.addComponent(separator);
-		
+
 		preferencesItem = new MenuItem();
 		preferencesItem.text = 'Preferences';
 		preferencesItem.onClick = () -> {
-			
+
 			openSound();
 
 			var preferencesWindow = new Window();
@@ -930,7 +945,7 @@ class CharacterEditorV2 extends MusicBeatState {
 							songMetaLabel.text = "Song Name: " + songData.meta.songName;
 							if (songData.meta.artist != null) {
 								songMetaLabel.text +=  "\nComposed By: " + songData.meta.artist;
-							} 
+							}
 							if (songData.meta.timeChanges != null) {
 								songMetaLabel.text += "\n\nBPM: " + songData.meta.timeChanges[0].bpm;
 							}
@@ -940,7 +955,7 @@ class CharacterEditorV2 extends MusicBeatState {
 						}
 					}
 				}
-				
+
 			}
 
 			musicBox.addComponent(songList);
@@ -952,7 +967,7 @@ class CharacterEditorV2 extends MusicBeatState {
 					songMetaLabel.text = "Song Name: " + songData.meta.songName;
 					if (songData.meta.artist != null) {
 						songMetaLabel.text +=  "\nComposed By: " + songData.meta.artist;
-					} 
+					}
 					if (songData.meta.timeChanges != null) {
 						songMetaLabel.text += "\n\nBPM: " + songData.meta.timeChanges[0].bpm;
 					}
@@ -975,7 +990,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		}
 		fileMenu.addComponent(preferencesItem);
-		
+
 		var separator = new MenuSeparator();
 		fileMenu.addComponent(separator);
 
@@ -994,7 +1009,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		// -- Edit Dropdown -- \\
 		editMenu = new Menu();
-		editMenu.text = 'Edit'; 
+		editMenu.text = 'Edit';
 		topBar.addComponent(editMenu);
 
 		iconPropertiesItem = new MenuItem();
@@ -1020,7 +1035,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			openSound();
 			openAnimEditWindow();
 		}
-		editMenu.addComponent(editAnimsItem);      
+		editMenu.addComponent(editAnimsItem);
 
 		deleteAnimItem = new MenuItem();
 		deleteAnimItem.text = 'Delete Current Animation';
@@ -1029,11 +1044,11 @@ class CharacterEditorV2 extends MusicBeatState {
 		deleteAnimItem.onClick = () -> {
 			openSound();
 		}
-		editMenu.addComponent(deleteAnimItem);       
+		editMenu.addComponent(deleteAnimItem);
 
 		// -- Tools Dropdown -- \\
 		toolsMenu = new Menu();
-		toolsMenu.text = 'Tools'; 
+		toolsMenu.text = 'Tools';
 		topBar.addComponent(toolsMenu);
 
 		resetCameraItem = new MenuItem();
@@ -1045,7 +1060,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		toolsMenu.addComponent(resetCameraItem);
 
 		var separator = new MenuSeparator();
-		fileMenu.addComponent(separator); 
+		fileMenu.addComponent(separator);
 
 		clearAnimOffsetsItem = new MenuItem();
 		clearAnimOffsetsItem.text = 'Clear Animation Offsets';
@@ -1066,8 +1081,8 @@ class CharacterEditorV2 extends MusicBeatState {
 		toolsMenu.addComponent(clearAllOffsetsItem);
 
 		var separator = new MenuSeparator();
-		fileMenu.addComponent(separator); 
-		
+		fileMenu.addComponent(separator);
+
 		polyReloadEditor = new MenuItem();
 		polyReloadEditor.text = "Polymod Reload Editor";
 		polyReloadEditor.onClick = ()->{
@@ -1080,12 +1095,12 @@ class CharacterEditorV2 extends MusicBeatState {
 			});
 		}
 		toolsMenu.addComponent(polyReloadEditor);
-		
+
 		// -- Converters Dropdown -- \\
 		convertersMenu = new Menu();
-		convertersMenu.text = 'Converters'; 
+		convertersMenu.text = 'Converters';
 		topBar.addComponent(convertersMenu);
-		
+
 		psychConvertItem = new MenuItem();
 		psychConvertItem.text = 'Psych to V-Slice';
 		psychConvertItem.shortcutText = '';
@@ -1105,7 +1120,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			});
 		}
 		convertersMenu.addComponent(psychConvertItem);
-		
+
 		codenameConvertItem = new MenuItem();
 		codenameConvertItem.text = 'Codename to V-Slice';
 		codenameConvertItem.shortcutText = '';
@@ -1134,7 +1149,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 		}
 		topBar.addComponent(helpItem);
-		
+
 		userGuideItem = new MenuItem();
 		userGuideItem.text = 'User Guide';
 		userGuideItem.shortcutText = 'F1';
@@ -1142,7 +1157,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			openUserGuide();
 		}
 		helpItem.addComponent(userGuideItem);
-		
+
 		checkForUpdateItem = new MenuItem();
 		checkForUpdateItem.text = 'Check for Updates';
 		checkForUpdateItem.shortcutText = 'Ctrl + U';
@@ -1186,7 +1201,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			iconWindow.x = characterInfoWindow.x - editAnimWindow.width - 5;
 			iconWindow.y = 320;
 			add(iconWindow);
-			
+
 			var idBox = new HBox();
 			iconWindow.addComponent(idBox);
 
@@ -1226,7 +1241,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 			isPixelCheckbox = new CheckBox();
 			isPixelCheckbox.selected = curCharacterData.character.healthIcon != null ? (curCharacterData.character.healthIcon.isPixel != null ? curCharacterData.character.healthIcon.isPixel : false) : false;
-			isPixelCheckbox.color = 0xFFAAAAAA;			
+			isPixelCheckbox.color = 0xFFAAAAAA;
 			isPixelCheckbox.onChange = ()->{
 				if (curCharacterData.character.healthIcon == null) {
 					curCharacterData.character.healthIcon = {
@@ -1248,7 +1263,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			iconPreview.height = 150/1.4;
 			iconBox.addComponent(iconPreview);
 			openSound();
-			
+
 		} else {
 			windowManager.closeWindow(iconWindow);
 		}
@@ -1259,7 +1274,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		if (characterInfoWindow == null || !characterInfoWindow.visible) {
 
 			openSound();
-	
+
 			characterInfoWindow = new Window();
 			characterInfoWindow.cameras = [camHUD];
 			characterInfoWindow.windowManager = windowManager;
@@ -1273,7 +1288,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterInfoWindow.x = FlxG.width - characterInfoWindow.width - 10;
 			characterInfoWindow.y = 46;
 			add(characterInfoWindow);
-	
+
 			characterList = new DropDown();
 			characterList.text = "Pick Character";
 			characterList.searchable = true;
@@ -1294,15 +1309,15 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			}
 			characterInfoWindow.addComponent(characterList);
-	
+
 			var nameBox = new HBox();
 			characterInfoWindow.addComponent(nameBox);
-	
+
 			characterNameLabel = new Label();
 			characterNameLabel.text = 'Name:';
 			characterNameLabel.marginTop = 5;
 			nameBox.addComponent(characterNameLabel);
-	
+
 			charName = new TextField();
 			charName.placeholder = 'Character';
 			charName.text = curCharacterData.character.name;
@@ -1312,15 +1327,15 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.name = charName.text;
 			}
 			nameBox.addComponent(charName);
-	
+
 			var assetPathBoxBox = new HBox();
 			characterInfoWindow.addComponent(assetPathBoxBox);
-	
+
 			var assetPathLabel = new Label();
 			assetPathLabel.text = 'Asset Path:';
 			assetPathLabel.marginTop = 5;
 			assetPathBoxBox.addComponent(assetPathLabel);
-	
+
 			assetPath = new TextField();
 			assetPath.placeholder = '';
 			assetPath.text = StringTools.replace(curCharacterData.character.assetPath, "characters/", "");
@@ -1331,14 +1346,14 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.assetPath = "characters/" + assetPath.text;
 				if (checkFileExists(Paths.image('characters/' + assetPath.text))) {
 					assetPath.color = 0xFFAAAAAA;
-					
+
 					if (curCharacterData.character.renderType == "sparrow") {
 						characterSprite.frames = Paths.getSparrowAtlas(curCharacterData.character.assetPath);
 						onionSprite.frames = Paths.getSparrowAtlas(curCharacterData.character.assetPath);
-	
+
 						FlxAnimationUtil.addAtlasAnimations(characterSprite, curCharacterData.character.animations);
 						FlxAnimationUtil.addAtlasAnimations(onionSprite, curCharacterData.character.animations);
-	
+
 						for (anim in curCharacterData.character.animations) {
 							if (anim.offsets == null) {
 								characterSprite.setAnimationOffsets(anim.name, 0, 0);
@@ -1395,15 +1410,15 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			}
 			assetPathBoxBox.addComponent(assetPath);
-	
+
 			var renderTypeBox = new HBox();
 			characterInfoWindow.addComponent(renderTypeBox);
-	
+
 			var renderTypeLabel = new Label();
 			renderTypeLabel.text = 'Render Type:';
 			renderTypeLabel.marginTop = 5;
 			renderTypeBox.addComponent(renderTypeLabel);
-	
+
 			renderType = new TextField();
 			renderType.placeholder = 'sparrow';
 			renderType.text = curCharacterData.character.renderType != null ? curCharacterData.character.renderType : "sparrow";
@@ -1419,15 +1434,15 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.renderType = renderType.text;
 			}
 			renderTypeBox.addComponent(renderType);
-	
+
 			var charScaleBox = new HBox();
 			characterInfoWindow.addComponent(charScaleBox);
-	
+
 			var charScaleLabel = new Label();
 			charScaleLabel.text = 'Scale:';
 			charScaleLabel.marginTop = 5;
 			charScaleBox.addComponent(charScaleLabel);
-	
+
 			charScaleStepper = new NumberStepper();
 			charScaleStepper.color = 0xFFAAAAAA;
 			charScaleStepper.min = 0.1;
@@ -1441,15 +1456,15 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.scale = charScaleStepper.pos;
 			}
 			charScaleBox.addComponent(charScaleStepper);
-	
+
 			var singTimeBox = new HBox();
 			characterInfoWindow.addComponent(singTimeBox);
-	
+
 			var singTimeLabel = new Label();
 			singTimeLabel.text = 'Sing Time:';
 			singTimeLabel.marginTop = 5;
 			singTimeBox.addComponent(singTimeLabel);
-	
+
 			singTimeStepper = new NumberStepper();
 			singTimeStepper.color = 0xFFAAAAAA;
 			singTimeStepper.width = 138;
@@ -1458,15 +1473,15 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.singTime = singTimeStepper.pos;
 			}
 			singTimeBox.addComponent(singTimeStepper);
-	
+
 			var danceEveryBox = new HBox();
 			characterInfoWindow.addComponent(danceEveryBox);
-	
+
 			var danceEveryLabel = new Label();
 			danceEveryLabel.text = 'Dance Interval:';
 			danceEveryLabel.marginTop = 5;
 			danceEveryBox.addComponent(danceEveryLabel);
-	
+
 			danceEveryStepper = new NumberStepper();
 			danceEveryStepper.color = 0xFFAAAAAA;
 			danceEveryStepper.width = 103;
@@ -1476,38 +1491,38 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.danceEvery = danceEveryStepper.pos;
 			}
 			danceEveryBox.addComponent(danceEveryStepper);
-	
+
 			charOffsetsBox = new HBox();
 			characterInfoWindow.addComponent(charOffsetsBox);
-	
+
 			var charOffsetLabel = new Label();
 			charOffsetLabel.text = 'Offsets:';
 			charOffsetLabel.marginTop = 5;
 			charOffsetsBox.addComponent(charOffsetLabel);
-	
+
 			charStepperX = new NumberStepper();
 			charStepperX.color = 0xFFAAAAAA;
 			charStepperX.width = 65;
 			charStepperX.marginLeft = 17;
 			charOffsetsBox.addComponent(charStepperX);
-	
+
 			charStepperY = new NumberStepper();
 			charStepperY.color = 0xFFAAAAAA;
 			charStepperY.marginLeft = 17;
 			charStepperY.width = 65;
 			charOffsetsBox.addComponent(charStepperY);
-	
+
 			var charflipXBox = new HBox();
 			charflipXBox.marginTop = -10;
 			charflipXBox.marginLeft = 30;
 			characterInfoWindow.addComponent(charflipXBox);
 			characterInfoWindow.addComponent(charflipXBox); // Adding twice gives space between
-	
+
 			var charFlipX = new Label();
 			charFlipX.text = 'Flip X:';
 			charFlipX.marginTop = 5;
 			charflipXBox.addComponent(charFlipX);
-	
+
 			charFlipXCheckBox = new CheckBox();
 			charFlipXCheckBox.marginTop = 5;
 			charFlipXCheckBox.color = 0x00aaaaaa;
@@ -1516,25 +1531,25 @@ class CharacterEditorV2 extends MusicBeatState {
 				curCharacterData.character.flipX = charFlipXCheckBox.selected;
 			}
 			charflipXBox.addComponent(charFlipXCheckBox);
-	
+
 			var charFlipY = new Label();
 			charFlipY.text = 'Flip Y:';
 			charFlipY.marginTop = 5;
 			charflipXBox.addComponent(charFlipY);
-	
+
 			var charFlipYCheckBox = new CheckBox();
 			charFlipYCheckBox.marginTop = 5;
-			charFlipYCheckBox.color = 0x00aaaaaa;	
+			charFlipYCheckBox.color = 0x00aaaaaa;
 			charflipXBox.addComponent(charFlipYCheckBox);
-	
+
 			var splitter = new HorizontalSplitter();
 			characterInfoWindow.addComponent(splitter);
-	
+
 			var animLabel = new Label();
 			animLabel.text = 'Animations';
 			animLabel.marginTop = 8;
 			characterInfoWindow.addComponent(animLabel);
-	
+
 			animationList = new ListView();
 			animationList.onChange = ()->{
 				if (FlxG.keys.pressed.CONTROL) {
@@ -1543,7 +1558,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				} else {
 					characterSprite.playAnimation(animationList.selectedItem.text, true);
 				}
-				
+
 				curAnim = getAnimData(animationList.selectedItem.text);
 				// debugPrint(curAnim); // Was getting in the way of my testing
 				if (animName != null) {
@@ -1572,7 +1587,7 @@ class CharacterEditorV2 extends MusicBeatState {
 					if (curAnim.looped == null) {
 						curAnim.looped = false;
 					}
-					//loopCheckBox.selected = curAnim.looped; 
+					//loopCheckBox.selected = curAnim.looped;
 				}
 				if (animFlipXCheckBox != null) {
 					//animFlipXCheckBox.selected = curAnim.flipX != null ? curAnim.flipX : false;
@@ -1583,18 +1598,18 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				if (characterSprite.animation.curAnim == null) return;
 				curAnimDefaultIndices = characterSprite.animation.curAnim.frames;
-				
-				
+
+
 				// prefix.text = animationList.selectedItem.text;
 			}
 			animationList.width = 215;
 			animationList.height = 175;
 			animationList.marginTop = 5;
 			characterInfoWindow.addComponent(animationList);
-	
+
 			var editButtonBox = new HBox();
 			characterInfoWindow.addComponent(editButtonBox);
-			
+
 			var animEditButton = new Button();
 			animEditButton.text = 'Edit Animation';
 			animEditButton.marginTop = 5;
@@ -1605,10 +1620,10 @@ class CharacterEditorV2 extends MusicBeatState {
 				openAnimEditWindow();
 			}
 			editButtonBox.addComponent(animEditButton);
-	
+
 			var createDeleteButtonBox = new HBox();
 			characterInfoWindow.addComponent(createDeleteButtonBox);
-	
+
 			var createAnimButton = new Button();
 			createAnimButton.width = 105;
 			createAnimButton.marginTop = 5;
@@ -1642,7 +1657,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				var newAnimPrefixHBox = new HBox();
 				newAnimWindow.addComponent(newAnimPrefixHBox);
-				
+
 				var newAnimPrefixLable = new Label();
 				newAnimPrefixLable.text = "Prefix:";
 				newAnimPrefixLable.marginTop = 5;
@@ -1683,7 +1698,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				newAnimWindow.addComponent(newAnimOkayButton);
 			}
 			createDeleteButtonBox.addComponent(createAnimButton);
-	
+
 			var deleteAnimButton = new Button();
 			deleteAnimButton.width = 105;
 			deleteAnimButton.marginTop = 5;
@@ -1698,13 +1713,13 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			}
 			createDeleteButtonBox.addComponent(deleteAnimButton);
-	
+
 			reloadAnimationList();
-			
+
 		} else {
 			windowManager.closeWindow(characterInfoWindow);
 		}
-		
+
 	}
 
 	var editAnimWindow;
@@ -1769,7 +1784,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				curAnim.prefix = prefix.text;
 			}
 			prefixBox.addComponent(prefix);
-			
+
 			indicesBox = new HBox();
 			editAnimWindow.addComponent(indicesBox);
 
@@ -1932,7 +1947,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	function openUserGuide() {
 		if (helpWindow == null || !helpWindow.visible) {
 			openSound();
-	
+
 			helpWindow = new Window();
 			helpWindow.title = 'Help';
 			helpWindow.windowManager = windowManager;
@@ -1945,44 +1960,44 @@ class CharacterEditorV2 extends MusicBeatState {
 			helpWindow.minimizable = false;
 			helpWindow.collapsable = false;
 			add(helpWindow);
-	
+
 			var helpTabs = new TabView();
 			helpTabs.width = 465;
 			helpTabs.height = 525;
-	
+
 			var helpTabBarGuide = new Box();
 			helpTabBarGuide.text = 'Guide';
 			helpTabs.addComponent(helpTabBarGuide);
-	
+
 			var guideLabel = new Label();
 			guideLabel.width = helpTabs.width;
-			guideLabel.text = "So you decided you can't figure out anything... well that makes two of us!\n\n" + 
-			"Saldy not much is here at the moment so how about you take a look at the two other tabs to pass the time! You might learn a thing or two!" + 
-			"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" + 
+			guideLabel.text = "So you decided you can't figure out anything... well that makes two of us!\n\n" +
+			"Saldy not much is here at the moment so how about you take a look at the two other tabs to pass the time! You might learn a thing or two!" +
+			"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" +
 			"to be changed.";
 			helpTabBarGuide.addComponent(guideLabel);
-	
+
 			var helpTabBarShortcuts = new Box();
 			helpTabBarShortcuts.text = 'Keybind';
 			helpTabs.addComponent(helpTabBarShortcuts);
-	
+
 			helpTabelView = new TableView();
 			helpTabelView.height = helpTabs.height - 45;
 			helpTabBarShortcuts.addComponent(helpTabelView);
-	
+
 			var helpHeader = new Header();
 			helpTabelView.addComponent(helpHeader);
-	
+
 			var actionColumn = new Column();
 			actionColumn.text = 'Action';
 			actionColumn.width = (helpTabs.width/2) - 9;
 			helpHeader.addComponent(actionColumn);
-			
+
 			var keybindColumn = new Column();
 			keybindColumn.text = 'Keybind';
 			keybindColumn.width = (helpTabs.width/2) - 9;
 			helpHeader.addComponent(keybindColumn);
-	
+
 			var keybindText = new ListView();
 			keybindText.marginTop = 25;
 			keybindText.allowInteraction = false;
@@ -1992,7 +2007,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				keybindText.selectedItem = null;
 				keybindText.selectedItems = [];
 			}
-			
+
 			keybindText.dataSource.add( {text: "Show User Guide                 F1"} );
 			//keybindText.dataSource.add( {text: "Open Stage                      Ctrl + O"} );
 			keybindText.dataSource.add( {text: "New Character                   Ctrl + N"} );
@@ -2015,7 +2030,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			keybindText.dataSource.add( {text: "Play Idle Animation             Z"} );
 			keybindText.dataSource.add( {text: "Play Onion Idle Animation       Ctrl + (Z)"} );
 			helpTabBarShortcuts.addComponent(keybindText);
-	
+
 			var helpTabExtra = new ScrollView();
 			helpTabExtra.text = 'Change Log';
 			helpTabExtra.contentWidth = helpTabs.width - 30;
@@ -2023,7 +2038,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			helpTabExtra.width = helpTabs.width - 16;
 			helpTabExtra.height = helpTabs.height - 42;
 			helpTabs.addComponent(helpTabExtra);
-	
+
 			var changelogText = new Label();
 			changelogText.width = helpTabs.width;
 			changelogText.text = editorTitle + " " + editorVersion +
@@ -2035,34 +2050,34 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			}
 			helpTabExtra.addComponent(changelogText);
-	
+
 			var creditsTab = new Box();
 			creditsTab.text = 'Credits';
 			helpTabs.addComponent(creditsTab);
-	
+
 			var creditsLabel = new Label();
 			creditsLabel.width = helpTabs.width;
 			creditsLabel.text = "Credits:";
 			creditsTab.addComponent(creditsLabel);
-	
+
 			var creditsList = new ListView();
 			creditsList.marginTop = 25;
 			creditsList.allowInteraction = false;
 			creditsList.width = helpTabs.width - 16;
-	
+
 			creditsList.dataSource.add( {text: "Nebula S. Nova                  Main Coder, Lofi Freaky Menu"} );
 			creditsList.dataSource.add( {text: "GENZU                           Coded The \"Help\" Window"} );
-			
+
 			creditsTab.addComponent(creditsList);
-	
+
 			var todoTab = new Box();
 			todoTab.text = 'To-Do';
 			//helpTabs.addComponent(todoTab);
-	
+
 			var todoLabel = new Label(); // Copy pasted LOL 🤓☝️ - nebula
 			todoLabel.width = helpTabs.width;
 			var lines = [
-				"To-Do:", 
+				"To-Do:",
 				"",
 				"-- Additions --",
 				"",
@@ -2075,42 +2090,42 @@ class CharacterEditorV2 extends MusicBeatState {
 				todoLabel.text = StringTools.replace(todoLabel.text, "null", "");
 			}
 			todoTab.addComponent(todoLabel);
-	
+
 			var discordTab = new VBox();
 			discordTab.text = 'Discord';
 			helpTabs.addComponent(discordTab);
-	
-	
+
+
 			var novaEditorServer = new Label();
 			novaEditorServer.text = "Nova Editor Server:\nhttps://discord.gg/MTMRYc63Dj";
 			discordTab.addComponent(novaEditorServer);
-	
+
 			var launchNovaServer = new Button();
-			launchNovaServer.text = "Join Server"; 
+			launchNovaServer.text = "Join Server";
 			launchNovaServer.allowInteraction = true;
 			launchNovaServer.onClick = ()->{
 				FlxG.openURL("https://discord.gg/MTMRYc63Dj");
 			}
 			//launchNovaServer.marginTop = 35;
 			discordTab.addComponent(launchNovaServer);
-	
+
 			var vSliceNetworkServer = new Label();
 			vSliceNetworkServer.text = "\nV-Slice Network:\nhttps://discord.gg/6ja4A7qtJc";
 			discordTab.addComponent(vSliceNetworkServer);
-	
+
 			var launchVSliceServer = new Button();
-			launchVSliceServer.text = "Join Server"; 
+			launchVSliceServer.text = "Join Server";
 			launchVSliceServer.allowInteraction = true;
 			launchVSliceServer.onClick = ()->{
 				FlxG.openURL("https://discord.gg/6ja4A7qtJc");
 			}
 			//launchNovaServer.marginTop = 35;
 			discordTab.addComponent(launchVSliceServer);
-	
+
 			var thanksLabel = new Label();
 			thanksLabel.text = "\n\nHUGE Thanks To V-Slice Network for providing tips when I was \ncoding this.\n- Nebula S. Nova";
 			discordTab.addComponent(thanksLabel);
-						
+
 			helpWindow.addComponent(helpTabs);
 		} else {
 			windowManager.closeWindow(helpWindow);
@@ -2218,7 +2233,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		if (curCharacterData.character.danceEvery == null){
 			curCharacterData.character.danceEvery = 1;
 		}
-		
+
 		for (i in members) {
 			var blackList = ["FunkinSprite", "ScriptedSparrowCharacter", "ScriptedMultiSparrowCharacter", "ScriptedAnimateAtlasCharacter", "Box", "Label"];
 			var classArray = ReflectUtil.getClassNameOf(i).split(".");
@@ -2241,7 +2256,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		// so why does your code not work? - genzu
 
 		for (i in curCharacterData.character.animations) {
-			if (i.name == characterSprite.animation.name) {				
+			if (i.name == characterSprite.animation.name) {
 				if (FlxG.keys.justPressed.LEFT) {
 					i.offsets[0] -= (FlxG.keys.pressed.SHIFT ? 10 : 1) * (!i.flipX ? -1 : 1);
 				}
@@ -2262,7 +2277,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 				onionSprite.animationOffsets[i.name][0] = i.offsets[0];
 				onionSprite.animationOffsets[i.name][1] = i.offsets[1];
-				
+
 			}
 		}
 
@@ -2326,9 +2341,9 @@ class CharacterEditorV2 extends MusicBeatState {
 					cameraTarget.x -= FlxG.mouse.deltaX/FlxG.camera.zoom;
 					cameraTarget.y -= FlxG.mouse.deltaY/FlxG.camera.zoom;
 				}
-				
+
 			// } else {
-				
+
 			// }
 		}
 
@@ -2356,7 +2371,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			cameraTarget.zoom = 0.01;
 		}
 
-		
+
 
 		if (editAnimWindow != null) {
 			editAnimWindow.x = characterInfoWindow.x - editAnimWindow.width - 5;
@@ -2384,7 +2399,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			}
 		}
 	}
-	
+
 	override function stepHit() {
 		super.stepHit();
 		var curStep = get_conductorInUse().currentStep;
