@@ -16,6 +16,13 @@
         "color": "#ff9ecf",
         "roles": "Coded like a lot",
         "url": "https://www.youtube.com/@_genzu"
+    },
+	  {
+        "name": "Rodney",
+        "icon": "rodner",
+        "color": "#00c8ff",
+        "roles": "Bully tf out of everyone. /lh",
+        "url": "https://linktr.ee/rodney528"
     }
   ],
   "api_version": "0.6.4",
