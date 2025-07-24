@@ -18,7 +18,7 @@ import funkin.ui.mainmenu.MainMenuState;
 
 
 import funkin.util.FileUtil;
-import flixel.util.FlxSave;
+// import flixel.util.FlxSave;
 import funkin.util.MathUtil;
 import funkin.util.WindowUtil;
 import funkin.util.ReflectUtil;
@@ -94,6 +94,8 @@ import flixel.util.FlxTimer;
 
 import funkin.util.assets.FlxAnimationUtil;
 
+import funkin.save.Save;
+
 class CharacterEditorV2 extends MusicBeatState {
     var FILE_FILTER_XML:FileFilter = new FileFilter("Codename Character File", "*.xml");
 	// -- Classes -- \\
@@ -101,9 +103,15 @@ class CharacterEditorV2 extends MusicBeatState {
 	// ------------- \\
 
 	// -- Editor Info -- \\
-	var editorVersion = "v0.1.0";
+	var editorVersion = "v0.1.1";
 	var editorTitle = "Nova Character Editor REFRESHED";
 	var changelog = [
+		{
+			version: "v0.1.1",
+			changes: [
+				"Made editor work for 0.7.X"
+			]
+		},
 		{
 			version: "v0.1.0",
 			changes: [
@@ -157,7 +165,14 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	var uiColor = 0xFFFFFFFF;
 
-	var save = new FlxSave();
+	// var save = new FlxSave();
+	var save = {
+		bind: (string1, string2)->{},
+		data: Save.fetchFromSlotRaw('nova-editors') ?? {
+			editorSong: null,
+			bgColor: null
+		}
+	};
 	
 
 	var enableBetaFeatures = false;
@@ -376,12 +391,12 @@ class CharacterEditorV2 extends MusicBeatState {
 		}
 	}
 	
-	function loadCharacter(characterData) {
-		curCharacterData = characterData;
+	function loadCharacter(theCharacterData) {
+		curCharacterData = theCharacterData;
 		reloadAnimationList();
 		var curAnim = curCharacterData.character.animations[0];
 
-		var character = characterData.character;
+		var character = theCharacterData.character;
 		if (charName != null){
 			charName.text = character.name;
 		}
@@ -427,9 +442,9 @@ class CharacterEditorV2 extends MusicBeatState {
 			remove(onionSprite);
 		}
 
-		trace(characterData.id);
+		trace(theCharacterData.id);
 		
-		onionSprite = CharacterDataParser.fetchCharacter(characterData.id);
+		onionSprite = CharacterDataParser.fetchCharacter(theCharacterData.id);
 		onionSprite.updateHitbox();
 		onionSprite.screenCenter();
 		onionSprite.alpha = 0.5;
@@ -437,7 +452,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		onionSprite.flipX = false;
 		add(onionSprite);
 
-		characterSprite = CharacterDataParser.fetchCharacter(characterData.id);
+		characterSprite = CharacterDataParser.fetchCharacter(theCharacterData.id);
 		characterSprite.updateHitbox();
 		characterSprite.screenCenter();
 		// characterSprite.playAnimation("idle");
@@ -787,6 +802,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			bgColorPicker.onChange = ()->{
 				bg.color = bgColorPicker.currentColor;
 				save.data.bgColor = bgColorPicker.currentColor;
+				Save.writeToAvailableSlot('nova-editors', save.data);
 			}
 			bgColorPickerBox.addComponent(bgColorPicker);
 
@@ -839,7 +855,13 @@ class CharacterEditorV2 extends MusicBeatState {
 				}
 			}
 			for (file in FileUtil.readDir("assets/music/")) {
-				var songMeta = parseJsonFile("assets/music/" + file + "/" + file + "-metadata.json");
+				var metaPath = "assets/music/" + file + "/" + file + "-metadata.json";
+				var songMeta;
+				if (FileUtil.fileExists(metaPath)) {
+					songMeta = parseJsonFile(metaPath);
+				} else {
+					songMeta = { songName: file, artist: "???", timeChanges: [{bpm: "???"}] };
+				}
 				realSongList.push({
 					id: file,
 					meta: songMeta
@@ -884,6 +906,7 @@ class CharacterEditorV2 extends MusicBeatState {
 							}
 							FunkinSound.playMusic(songData.id, {startingVolume: 0, overrideExisting: true, restartTrack: false, persist: true, loop: true});
 							FlxG.sound.music.fadeIn(0.5 /* Duration */, 0, 1);
+							Save.writeToAvailableSlot('nova-editors', save.data);
 						}
 					}
 				}
@@ -1226,6 +1249,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterList.searchable = true;
 			characterList.width = 215;
 			characterList.color = 0xFFAAAAAA;
+			trace(characterData);
 			for (i in characterData) {
 				characterList.dataSource.add({text: i.character.name});
 			}
@@ -1654,7 +1678,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	}
 
 	var editAnimWindow;
-	var curAnim;
+	//var curAnim;
 
 	function openAnimEditWindow() {
 		// dumb ahh code above fr - genzu
