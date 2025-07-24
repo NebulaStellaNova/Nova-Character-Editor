@@ -103,9 +103,17 @@ class CharacterEditorV2 extends MusicBeatState {
 	// ------------- \\
 
 	// -- Editor Info -- \\
-	var editorVersion = "v0.1.1";
+	var editorVersion = "v0.1.2";
 	var editorTitle = "Nova Character Editor REFRESHED";
 	var changelog = [
+		{
+			version: "v0.1.2",
+			changes: [
+				"-- Fixes --",
+				"Fixed converters from crashing.",
+				"Fixed updater from crashing."
+			]
+		},
 		{
 			version: "v0.1.1",
 			changes: [
@@ -239,6 +247,18 @@ class CharacterEditorV2 extends MusicBeatState {
 		add(text);
 	}
 
+	function deleteDirectory(path) {
+		var subObjects = FileUtil.readDir(path);
+		for (i in subObjects) {
+			if (!StringTools.contains(i, ".")) {
+				deleteDirectory(path + "/" + i);
+			} else {
+				FileUtil.deleteFile(path + "/" + i);
+			}
+		}
+		FileUtil.deleteDir(path);
+	}
+
 	function downloadLatestVersion() {
 		trace(currentFolder);
 		var loader = new URLLoader();
@@ -247,6 +267,7 @@ class CharacterEditorV2 extends MusicBeatState {
 		loader.addEventListener("complete", ()->{
 			debugPrint("Latest Version Downloaded!");
 			debugPrint("Extracting ZIP File...");
+			checkForCurrentFolder();
 			deleteDirectory(currentFolder);
 			//FileUtil.deleteDir(currentFolder);
 			var bytesInput = new BytesInput(loader.data);
@@ -256,6 +277,7 @@ class CharacterEditorV2 extends MusicBeatState {
 				var data = Reader.unzip(_entry);
 				if (data + "" != "") {
 					var fileName = StringTools.replace(_entry.fileName, "Nova-Character-Editor-main/", "");
+					checkForCurrentFolder();
 					FileUtil.writeBytesToPath(currentFolder+ "/" + fileName, data);
 				}
 			}
@@ -538,6 +560,7 @@ class CharacterEditorV2 extends MusicBeatState {
 	
 	function newCharacterAs(name) {
 		disableAutoPause();
+		checkForCurrentFolder();
 		tempChar = parseJsonFile(currentFolder + "/data/config/templateCharacter.json");
 		tempChar.name = name;
 		FileUtil.browseForSaveFile([FileUtil.FILE_FILTER_JSON], (path)->{
@@ -563,6 +586,19 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	var currentFolder = "??";
 
+	function checkForCurrentFolder() {
+		for (mod in PolymodHandler.getAllMods()) {
+			var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
+			if (meta.title == editorTitle) {
+				currentFolder = "mods/" + mod.id;
+				if (Converters != null) {
+					Converters.scriptSet("currentFolder", currentFolder);
+				}
+				break;
+			}
+		}
+	}
+
 	function fixPath(path) {
 		var stringSplit = path.split("\\");
 		while (stringSplit[0] != "mods") {
@@ -581,13 +617,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
         Converters = ModuleHandler.getModule("NovaConverters");
 
-		for (mod in PolymodHandler.getAllMods()) {
-			var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
-			if (meta.title == editorTitle) {
-				currentFolder = "mods/" + mod.id;
-				break;
-			}
-		}
+		checkForCurrentFolder();
 
 		save.bind("nova-editors", "NebulaStellaNova");
 		if(save.data.editorSong == null) {
@@ -1249,7 +1279,7 @@ class CharacterEditorV2 extends MusicBeatState {
 			characterList.searchable = true;
 			characterList.width = 215;
 			characterList.color = 0xFFAAAAAA;
-			trace(characterData);
+			// trace(characterData);
 			for (i in characterData) {
 				characterList.dataSource.add({text: i.character.name});
 			}

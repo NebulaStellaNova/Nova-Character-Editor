@@ -9,6 +9,7 @@ import funkin.modding.module.Module;
 import funkin.modding.PolymodHandler;
 
 class NovaConverters extends Module {
+    var currentFolder = "??";
 
     function new() {
         super('NovaConverters');
@@ -19,14 +20,6 @@ class NovaConverters extends Module {
     }
 
     function getBaseTemplate() {
-        var currentFolder = "??";
-        for (mod in PolymodHandler.getAllMods()) {
-            var meta = Json.parse(FileUtil.readStringFromPath("mods/" + mod.id + "/_polymod_meta.json"));
-            if (meta.title == "Nova Character Editor REFRESHED - PRELEASE") {
-                currentFolder = "mods/" + mod.id;
-                break;
-            }
-        }
         return Json.parse(FileUtil.readStringFromPath(currentFolder + "/data/config/templateCharacter.json"));
     }
 
@@ -95,6 +88,9 @@ class NovaConverters extends Module {
         }
 
         for (anim in baseTemplate.animations) {
+            if (anim.indices == null) {
+                anim.indices = [];
+            }
             anim.indices.remove("");
         }
         baseTemplate.name = "Your Name Here";
