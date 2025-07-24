@@ -103,9 +103,16 @@ class CharacterEditorV2 extends MusicBeatState {
 	// ------------- \\
 
 	// -- Editor Info -- \\
-	var editorVersion = "v0.1.2";
+	var editorVersion = "v0.1.3";
 	var editorTitle = "Nova Character Editor REFRESHED";
 	var changelog = [
+		{
+			version: "v0.1.3",
+			changes: [
+				"-- Fixes --",
+				"Added a file exists check for polymod json."
+			]
+		},
 		{
 			version: "v0.1.2",
 			changes: [
@@ -588,6 +595,7 @@ class CharacterEditorV2 extends MusicBeatState {
 
 	function checkForCurrentFolder() {
 		for (mod in PolymodHandler.getAllMods()) {
+			if (!checkFileExists("mods/" + mod.id + "/_polymod_meta.json")) continue;
 			var meta = parseJsonFile("mods/" + mod.id + "/_polymod_meta.json");
 			if (meta.title == editorTitle) {
 				currentFolder = "mods/" + mod.id;
